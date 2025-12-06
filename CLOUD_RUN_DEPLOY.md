@@ -23,7 +23,7 @@ gcloud run deploy platground \
   --platform managed \
   --region $REGION \
   --allow-unauthenticated \
-  --set-secrets GENERATIVE_AI_KEY=AIzaSyBXgfxPmcpcAktzecqiKO_5FS5_gU9VnhA:latest \
+  --set-secrets GENERATIVE_AI_KEY=GENERATIVE_AI_KEY:latest \
   --port 8000 \
   --project $PROJECT_ID```
 
