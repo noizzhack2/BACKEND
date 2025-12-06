@@ -1,0 +1,12 @@
+## first api
+get requested form
+{
+    "form_name": ,
+    "score"
+}
+
+## return form with instructions field that represent native agent that help user to fill the form.
+it should ask the user for the missing field
+
+## should get form (json) with user request. the agent will fill the form with the missing details he get from the user
+then it will returned the updated form (json)

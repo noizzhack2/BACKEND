@@ -2,11 +2,14 @@
 # NOTE: Some langchain-related packages in your code may be published under different names.
 # If pip cannot find a package, check the exact PyPI package name or install from source.
 
-fastapi
-uvicorn[standard]
-pydantic
+fastapi>=0.95
+uvicorn[standard]>=0.22
+# Use Pydantic v2 which is compatible with Python 3.14
+pydantic>=2.0
+# Chroma (vector DB) - ensure a wheel is available for your platform
 chromadb
-langchain
+# LangChain and related packages - prefer versions that target Pydantic v2
+langchain>=0.0.300
 langchain-google-genai
 langchain-community
 langchain-text-splitters

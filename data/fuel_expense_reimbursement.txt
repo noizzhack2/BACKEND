@@ -1,0 +1,61 @@
+Fuel Expense Reimbursement Form
+טופס בקשה להחזר הוצאות דלק
+
+Purpose / מטרה:
+This form is used to request reimbursement for fuel expenses incurred during business travel or authorized vehicle use.
+טופס זה משמש לבקשת החזר הוצאות דלק שנגרמו במהלך נסיעות עסקיות או שימוש מורשה בכלי רכב.
+
+Instructions / הנחיות:
+1. Fill in all required fields marked with an asterisk (*) / מלא את כל השדות הנדרשים המסומנים בכוכבית (*)
+2. Attach receipts or proof of fuel purchase / צרף קבלות או הוכחה לרכישת דלק
+3. Submit within 30 days of the expense / הגש תוך 30 יום מהוצאה
+4. Manager approval required before processing / אישור מנהל נדרש לפני עיבוד
+
+Form Fields / שדות הטופס:
+
+1. Employee Information / מידע עובד
+   - Employee Name (required) / שם העובד (נדרש)
+   - Employee ID (required) / מספר עובד (נדרש)
+   - Department (required) / מחלקה (נדרשת)
+   - Email Address (required) / כתובת דוא"ל (נדרשת)
+   - Phone Number (required) / מספר טלפון (נדרש)
+
+2. Expense Details / פרטי ההוצאה
+   - Date of Fuel Purchase (required) - Format: MM/DD/YYYY / תאריך רכישת דלק (נדרש) - פורמט: MM/DD/YYYY
+   - Fuel Station Name (required) / שם תחנת הדלק (נדרש)
+   - Location/City (required) / מיקום/עיר (נדרש)
+   - Amount in Gallons (required) - Numeric value / כמות ליטרים (נדרש) - ערך מספרי
+   - Price per Gallon (required) - Currency format / מחיר ליטר (נדרש) - פורמט כספי
+   - Total Amount (required) - Auto-calculated / סה"כ (נדרש) - מחושב באופן אוטומטי
+   - Vehicle Registration Number (required) / מספר רישום כלי הרכב (נדרש)
+   - Starting Odometer Reading (required) - Numeric / קריאת אודומטר התחלתית (נדרש) - מספרי
+   - Ending Odometer Reading (required) - Numeric / קריאת אודומטר סיום (נדרש) - מספרי
+   - Total Miles Driven (required) - Auto-calculated / סה"כ קילומטרים (נדרש) - מחושב באופן אוטומטי
+
+3. Trip Purpose / מטרת הנסיעה
+   - Trip Destination (required) / יעד הנסיעה (נדרש)
+   - Trip Purpose (required) - Select from: Business Meeting, Client Visit, Conference, Training, Other / מטרת הנסיעה (נדרש) - בחר מ: ישיבת עסקים, ביקור בלקוח, כנס, הכשרה, אחר
+   - Business Justification (required) - Text area, minimum 50 characters / הצדקה עסקית (נדרש) - שדה טקסט, מינימום 50 תווים
+   - Department Code (required) / קוד מחלקה (נדרש)
+   - Project Code (optional) / קוד פרויקט (אופציונלי)
+
+4. Approval / אישור
+   - Manager Name (required) / שם המנהל (נדרש)
+   - Manager Email (required) / דוא"ל המנהל (נדרש)
+   - Approval Status - Read-only field / סטטוס אישור - שדה קריאה בלבד
+   - Approval Date - Read-only field / תאריך אישור - שדה קריאה בלבד
+
+5. Supporting Documentation / תיעוד תומך
+   - Receipt Upload (required) - Accepted formats: PDF, JPG, PNG / העלאת קבלה (נדרש) - פורמטים מקובלים: PDF, JPG, PNG
+   - Additional Notes (optional) - Text area / הערות נוספות (אופציונלי) - שדה טקסט
+
+6. Declaration / הצהרה
+   - I certify that this expense is accurate and business-related (required) - Checkbox / אני מאשר כי הוצאה זו מדויקת וקשורה לעסקים (נדרש) - תיבת סימון
+   - I have attached the original receipt (required) - Checkbox / צירפתי את הקבלה המקורית (נדרש) - תיבת סימון
+
+Important Notes / הערות חשובות:
+- Reimbursement will be processed within 5-7 business days / ההחזר יעובד תוך 5-7 ימי עסקים
+- Personal vehicle use must be pre-approved / שימוש בכלי רכב אישי חייב להיות מאושר מראש
+- Corporate credit card should be used when available / יש להשתמש בכרטיס אשראי קורפורטיבי כאשר זה אפשרי
+- Fuel prices must be market rate / מחירי דלק חייבים להיות בשערים שוקיים
+- Hebrew and English requests are supported / בקשות בעברית ובאנגלית תומכות
