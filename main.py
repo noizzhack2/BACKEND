@@ -69,7 +69,7 @@ AVAILABLE_FORMS = set()
 FORM_INDEX: Dict[str, Dict[str, Any]] = {}
 # Embeddings instance (initialized at startup if API_KEY is present)
 EMBEDDINGS = None
-API_KEY = os.getenv("GENERATIVE_AI_KEY") or "AIzaSyBXgfxPmcpcAktzecqiKO_5FS5_gU9VnhA"
+API_KEY = os.getenv("GENERATIVE_AI_KEY") or ""
 
 # Lifespan context manager for startup/shutdown events
 @asynccontextmanager
