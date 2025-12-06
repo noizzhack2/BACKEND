@@ -16,4 +16,4 @@ ENV PORT 8000
 EXPOSE 8000
 
 # Start the app with uvicorn
-CMD ["uvicorn", "app:API", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "main:API", "--host", "0.0.0.0", "--port", "8000"]
