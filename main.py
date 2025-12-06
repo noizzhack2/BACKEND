@@ -1,5 +1,8 @@
 import os
 import json
+import sys
+import warnings
+from contextlib import asynccontextmanager
 from typing import List, Literal, Optional, Dict, Any
 from pydantic import BaseModel, Field 
 
@@ -17,7 +20,14 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.documents import Document
 import os
 
+# Silence langchain/old-pydantic compatibility warning on Python 3.14+
+if sys.version_info >= (3, 14):
+    warnings.filterwarnings(
+        "ignore",
+        message="Core Pydantic V1 functionality isn't compatible with Python 3.14 or greater."
+    )
 
+# Ensure API key is read from environment
 API_KEY = os.getenv("GENERATIVE_AI_KEY")
 EMBEDDING_MODEL = "text-embedding-004"
 LLM_MODEL = "gemini-2.5-flash"
@@ -50,13 +60,39 @@ class FormRequest(BaseModel):
 
 # --- 3. Indexing & RAG Initialization (Run Once on Startup) ---
 
+
 # Global variables to store the RAG components
 RAG_CHAIN = None
-API = FastAPI(title="Adaptive Form Generator API")
+AVAILABLE_FORMS = set()
+API_KEY = "AIzaSyBXgfxPmcpcAktzecqiKO_5FS5_gU9VnhA"
+
+# Lifespan context manager for startup/shutdown events
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup logic
+    global RAG_CHAIN, AVAILABLE_FORMS
+    AVAILABLE_FORMS = get_available_forms()
+    RAG_CHAIN = build_rag_chain()
+    print(f"🚀 API Ready to accept requests. Available forms: {AVAILABLE_FORMS}")
+    yield
+    # Shutdown logic (if needed)
+    print("🛑 API shutting down...")
+
+# Initialize FastAPI with lifespan
+API = FastAPI(title="Adaptive Form Generator API", lifespan=lifespan)
 
 def format_docs(docs: List[Document]) -> str:
     """Combines the content of the retrieved documents into a single string."""
     return "\n\n".join(doc.page_content for doc in docs)
+
+def get_available_forms():
+    """Scan DIRECTORY_PATH for available form names (filenames without extension)."""
+    forms = set()
+    if os.path.isdir(DIRECTORY_PATH):
+        for fname in os.listdir(DIRECTORY_PATH):
+            if fname.endswith('.txt') or fname.endswith('.pdf'):
+                forms.add(os.path.splitext(fname)[0].lower())
+    return forms
 
 def build_rag_chain():
     """Initializes and builds the RAG chain for form generation."""
@@ -130,38 +166,88 @@ def build_rag_chain():
         print(f"⚠️ Error initializing RAG chain: {e}")
         return None
 
-# Load the RAG chain upon API startup
-@API.on_event("startup")
-def startup_event():
-    global RAG_CHAIN
-    RAG_CHAIN = build_rag_chain()
-    print("🚀 API Ready to accept requests.")
-
 
 # --- 4. REST API Endpoint ---
+
+
 
 @API.post("/generate_form", response_model=AdaptiveForm)
 async def generate_form_endpoint(request: FormRequest):
     """
     Accepts a user request and returns a structured JSON schema for an adaptive form.
     """
-    if not RAG_CHAIN:
+    # Extract requested form name (simple heuristic: lowercase, strip spaces)
+    requested_form = request.user_request.strip().lower().replace(' form', '').replace('form', '').replace('for ', '').replace('a ', '').replace('the ', '').replace('an ', '').replace('request ', '').replace('create ', '').replace('make ', '').replace('need ', '').replace('want ', '').replace('to ', '').replace('get ', '').replace('generate ', '').replace('build ', '').replace('provide ', '').replace('show ', '').replace('give ', '').replace('open ', '').replace('start ', '').replace('submit ', '').replace('fill ', '').replace('registration ', 'registration').replace('expense ', 'expense').replace('report ', 'report').replace('trip ', 'trip').replace('conference ', 'conference').replace('application ', 'application').replace('feedback ', 'feedback').replace('survey ', 'survey').replace('contact ', 'contact').replace('signup ', 'signup').replace('sign up ', 'signup').replace('sign-up ', 'signup').replace('join ', 'join').replace('apply ', 'apply').replace('enroll ', 'enroll').replace('register ', 'register').replace('booking ', 'booking').replace('reservation ', 'reservation').replace('order ', 'order').replace('purchase ', 'purchase').replace('request ', 'request').replace('form', '').strip()
+
+    # Find the best matching form file
+    matched_form = None
+    for form_name in AVAILABLE_FORMS:
+        if form_name in requested_form or requested_form in form_name:
+            matched_form = form_name
+            break
+    if not matched_form:
         raise HTTPException(
-            status_code=503,
-            detail="RAG chain is not initialized. Please set GENERATIVE_AI_KEY environment variable."
+            status_code=414,
+            detail=f"Form not found. Available forms: {sorted(AVAILABLE_FORMS)}"
         )
-    
+
+    # Find the file path for the matched form
+    form_file_path = None
+    for ext in [".txt", ".pdf"]:
+        candidate = os.path.join(DIRECTORY_PATH, matched_form + ext)
+        if os.path.isfile(candidate):
+            form_file_path = candidate
+            break
+    if not form_file_path:
+        raise HTTPException(status_code=500, detail="Matched form file not found on disk.")
+
+    # Load the matched form file as a document
+    if form_file_path.endswith(".txt"):
+        with open(form_file_path, encoding="utf-8") as f:
+            form_content = f.read()
+        docs = [Document(page_content=form_content)]
+    elif form_file_path.endswith(".pdf"):
+        # Use PyPDFLoader to load PDF
+        pdf_loader = PyPDFLoader(form_file_path)
+        docs = pdf_loader.load()
+    else:
+        raise HTTPException(status_code=500, detail="Unsupported form file type.")
+
+    # Build a temporary RAG chain for this form only
     try:
-        # Invoke the RAG chain with the user's request
-        form_pydantic_object: AdaptiveForm = await RAG_CHAIN.ainvoke(request.user_request)
-        
-        # The Pydantic object is automatically converted to JSON by FastAPI
+        text_splitter = RecursiveCharacterTextSplitter(chunk_size=800, chunk_overlap=100)
+        chunks = text_splitter.split_documents(docs)
+        embeddings = GoogleGenerativeAIEmbeddings(model=EMBEDDING_MODEL, google_api_key=API_KEY)
+        vectorstore = Chroma.from_documents(documents=chunks, embedding=embeddings, persist_directory=None)
+        retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
+        llm = ChatGoogleGenerativeAI(model=LLM_MODEL, google_api_key=API_KEY)
+        llm_form_generator = llm.with_structured_output(AdaptiveForm)
+        form_prompt_template = """
+        You are an expert form generator. Your task is to analyze the user's request and the provided context 
+        (if any) and generate a complete JSON schema for an adaptive web form. 
+        The form must collect ALL necessary information based on the user's intent.
+
+        Context: {context}
+
+        User Request: {question}
+
+        INSTRUCTIONS: Based on the request and context, generate the Pydantic schema for the form.
+        """
+        form_prompt = ChatPromptTemplate.from_template(form_prompt_template)
+        chain = (
+            {
+                "context": retriever | format_docs,
+                "question": RunnablePassthrough()
+            }
+            | form_prompt
+            | llm_form_generator
+        )
+        form_pydantic_object: AdaptiveForm = await chain.ainvoke(request.user_request)
         return form_pydantic_object
-        
     except Exception as e:
         print(f"Error during chain execution: {e}")
         raise HTTPException(
-            status_code=500, 
+            status_code=500,
             detail="Failed to generate form: An internal error occurred."
         )
 

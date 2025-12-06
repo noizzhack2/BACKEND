@@ -1,0 +1,58 @@
+Fuel Expense Reimbursement Form
+
+Purpose:
+This form is used to request reimbursement for fuel expenses incurred during business travel or authorized vehicle use.
+
+Instructions:
+1. Fill in all required fields marked with an asterisk (*)
+2. Attach receipts or proof of fuel purchase
+3. Submit within 30 days of the expense
+4. Manager approval required before processing
+
+Form Fields:
+
+1. Employee Information
+   - Employee Name (required)
+   - Employee ID (required)
+   - Department (required)
+   - Email Address (required)
+   - Phone Number (required)
+
+2. Expense Details
+   - Date of Fuel Purchase (required) - Format: MM/DD/YYYY
+   - Fuel Station Name (required)
+   - Location/City (required)
+   - Amount in Gallons (required) - Numeric value
+   - Price per Gallon (required) - Currency format
+   - Total Amount (required) - Auto-calculated
+   - Vehicle Registration Number (required)
+   - Starting Odometer Reading (required) - Numeric
+   - Ending Odometer Reading (required) - Numeric
+   - Total Miles Driven (required) - Auto-calculated
+
+3. Trip Purpose
+   - Trip Destination (required)
+   - Trip Purpose (required) - Select from: Business Meeting, Client Visit, Conference, Training, Other
+   - Business Justification (required) - Text area, minimum 50 characters
+   - Department Code (required)
+   - Project Code (optional)
+
+4. Approval
+   - Manager Name (required)
+   - Manager Email (required)
+   - Approval Status - Read-only field
+   - Approval Date - Read-only field
+
+5. Supporting Documentation
+   - Receipt Upload (required) - Accepted formats: PDF, JPG, PNG
+   - Additional Notes (optional) - Text area
+
+6. Declaration
+   - I certify that this expense is accurate and business-related (required) - Checkbox
+   - I have attached the original receipt (required) - Checkbox
+
+Notes:
+- Reimbursement will be processed within 5-7 business days
+- Personal vehicle use must be pre-approved
+- Corporate credit card should be used when available
+- Fuel prices must be market rate

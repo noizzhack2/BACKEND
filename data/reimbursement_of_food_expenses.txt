@@ -1,0 +1,85 @@
+Reimbursement of Food Expenses Form
+
+Purpose:
+This form is used to request reimbursement for meal and food expenses incurred during business travel, client entertainment, or team events.
+
+Instructions:
+1. Complete all required fields marked with an asterisk (*)
+2. Attach itemized receipts for each meal
+3. Submit within 30 days of the expense
+4. Expenses must comply with company travel policy
+5. Obtain manager approval before submission
+
+Form Fields:
+
+1. Employee Information
+   - Employee Name (required)
+   - Employee ID (required)
+   - Department (required)
+   - Email Address (required)
+   - Phone Number (required)
+   - Cost Center (required)
+
+2. Expense Summary
+   - Expense Report Period (required) - Date range picker
+   - Report Submission Date (required)
+   - Currency (required) - Select: USD, EUR, GBP, Other
+   - Total Meal Expenses (required) - Auto-calculated
+
+3. Meal Details (Multiple entries allowed)
+   For each meal:
+   - Date of Meal (required) - Format: MM/DD/YYYY
+   - Restaurant/Vendor Name (required)
+   - Location/City (required)
+   - Meal Type (required) - Select: Breakfast, Lunch, Dinner, Snacks
+   - Business Purpose (required) - Select: Business Meeting, Client Entertainment, Team Event, Conference, Training, Travel
+   - Attendees Count (required) - Numeric value (minimum 1)
+   - Attendee Names/Details (required) - Text area
+   - Meal Amount (required) - Currency format
+   - Tip Amount (optional) - Currency format
+   - Tax Amount (required) - Currency format
+   - Total for This Meal (required) - Auto-calculated
+
+4. Attendee Details
+   - Company Attendees (required) - Employee names
+   - Client/External Attendees (required) - Name and company
+   - Business Discussion Topics (required) - Text area
+   - Expected Outcomes/Follow-ups (required) - Text area
+
+5. Compliance
+   - All attendees are company employees or clients (required) - Checkbox
+   - Expenses comply with company policy (required) - Checkbox
+   - Per Diem was not claimed for the same day (required) - Checkbox
+   - Duplicate reimbursement claim has not been submitted (required) - Checkbox
+
+6. Approvals
+   - Immediate Manager Name (required)
+   - Manager Email (required)
+   - Department Head Name (optional) - If amount exceeds threshold
+   - Approval Date - Read-only
+   - Approval Status - Read-only
+
+7. Supporting Documentation
+   - Receipt Attachments (required) - Multiple files allowed
+   - Receipt Format Accepted - PDF, JPG, PNG, TIFF
+   - Credit Card Statement (optional) - If applicable
+   - Additional Documentation (optional)
+
+8. Additional Information
+   - Special Circumstances (optional) - Text area
+   - Client Name/Company (optional)
+   - Project Code (optional)
+   - Funding Source (required) - Select: Department Budget, Project Budget, Client Recharge, Other
+
+9. Verification
+   - I confirm all information is accurate and truthful (required) - Checkbox
+   - I have retained copies of all receipts (required) - Checkbox
+   - All expenses are legitimate business expenses (required) - Checkbox
+
+Notes:
+- Standard meal limits per person: Breakfast $15, Lunch $25, Dinner $50
+- Alcohol limited to 20% of meal cost
+- Reimbursement processed within 5-10 business days
+- Missing itemized receipts may delay processing
+- Non-compliant expenses may be denied
+- Original receipts must show itemization, not just totals
