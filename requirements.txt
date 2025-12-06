@@ -1,0 +1,17 @@
+# Requirements for this project
+# NOTE: Some langchain-related packages in your code may be published under different names.
+# If pip cannot find a package, check the exact PyPI package name or install from source.
+
+fastapi
+uvicorn[standard]
+pydantic
+chromadb
+langchain
+langchain-google-genai
+langchain-community
+langchain-text-splitters
+langchain-core
+pypdf
+python-multipart
+
+# Add any other deps your project needs (e.g., google-auth, google-cloud-storage)

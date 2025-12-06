@@ -1,0 +1,16 @@
+# This file specifies files that are *not* uploaded to Google Cloud when using gcloud.
+.gcloudignore
+.git/
+.gitignore
+.env
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+node_modules/
+.DS_Store
+
+# Leave Dockerfile and requirements.txt so we can build the image
