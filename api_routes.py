@@ -51,9 +51,11 @@ def register_routes(
             try:
                 llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=api_key)
                 prompt = (
-                    "You are a helpful assistant. Given a short user request, "
-                    "produce a compact comma-separated list of closely related words and phrases "
-                    "in English and Hebrew that capture the same context (no explanations).\n\n"
+                    "You are a helpful assistant. Given a short user request, return a compact, "
+                    "high-context expansion: a comma-separated list of domain-specific synonyms, each has ONLY one noun word!, "
+                    "related entities, intents, actions, attributes, and common acronyms in BOTH English!! and Hebrew!!. "
+                    "Focus on meaningful terms only (no stopwords, no explanations, no numbering, no verbs). "
+                    "Keep it under ~60 tokens, maximize semantic coverage.\n\n"
                     f"Request: {text}\nRelated terms:"
                 )
                 resp = llm.invoke(prompt)
@@ -89,7 +91,7 @@ def register_routes(
             return []
 
         def keyword_overlap_score(form_keywords: List[str]) -> float:
-            print("Calculating keyword overlap score...", user_text, form_keywords)
+            print("Calculating keyword overlap score...", user_tokens, form_keywords)
             if not form_keywords or not user_tokens:
                 return 0.0
             kws = {k.strip().lower() for k in form_keywords if k.strip()}
