@@ -1,6 +1,9 @@
 Reimbursement of Food Expenses Form
 טופס בקשה להחזר הוצאות אוכל
 
+Keywords / מילות מפתח:
+food, meal, restaurant, lunch, dinner, breakfast, snack, beverage, food expenses, meal reimbursement, food reimbursement, catering, dining, food cost, food charge, meal cost, menu, restaurant bill, food expenses, entertainment, business meal, team lunch, client entertainment, food claim, meal allowance, food budget, אוכל, ארוחה, מסעדה, ארוחת צהריים, ארוחת ערב, ארוחת בוקר, חטיף, משקה, הוצאות אוכל, החזר ארוחה, החזר אוכל, קייטרינג, אוכל, הוצאות אוכל, תבעת ארוחה, החזר ארוחה, בידור, ארוחת עסקים, ארוחת צוות, בידור לקוח, תבעת אוכל, דמי ארוחה, תקציב אוכל
+
 Purpose / מטרה:
 This form is used to request reimbursement for meal and food expenses incurred during business travel, client entertainment, or team events.
 טופס זה משמש לבקשת החזר הוצאות ארוחות ואוכל שנגרמו במהלך נסיעות עסקיות, בידור לקוחות או אירועי צוות.

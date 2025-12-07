@@ -2,20 +2,24 @@
 
 from pydantic import BaseModel, Field
 from typing import List
+from typing import List, Literal, Optional, Dict, Any
 
 class FormField(BaseModel):
-    name: str = Field(description="The name/identifier of the field.")
-    type: str = Field(description="The type of input field (e.g., 'text', 'date', 'select', 'number', 'textarea', 'checkbox').")
-    label: str = Field(description="The human-readable label for the field.")
+    name: str = Field(description="A unique programmatic ID for the field (e.g., 'user_email').")
+    label: str = Field(description="The user-facing label for the field (e.g., 'Your Full Name').")
+    type: Literal["text", "number", "email", "textarea", "checkbox", "date", "select"] = Field(
+        description="The HTML input type."
+    )
+    initial_value: Optional[Any] = Field(default=None, description="The default value for the field, if any.")
     required: bool = Field(description="Whether the field is mandatory.")
-    placeholder: str = Field(default="", description="Placeholder text for the field.")
-    options: List[str] = Field(default_factory=list, description="For select fields, the list of available options.")
-    initial_value: None = Field(default=None, description="The default value for the field, if any.")
-
+    
+# 2.2. Define the complete adaptive form structure
 class AdaptiveForm(BaseModel):
     title: str = Field(description="A clear and concise title for the form.")
     description: str = Field(description="A brief explanation of the form's purpose.")
     fields: List[FormField] = Field(description="A list of all required input fields.")
+    score: Optional[float] = Field(default=None, description="Semantic similarity score (0-1) for the match.")
+
 
 def parse_form_from_text(form_name: str, form_content: str) -> AdaptiveForm:
     """
