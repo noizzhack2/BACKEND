@@ -21,6 +21,8 @@ from langchain_core.runnables import RunnablePassthrough, RunnableSequence
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.documents import Document
 import os
+from dotenv import load_dotenv
+load_dotenv()
 
 # Silence langchain/old-pydantic compatibility warning on Python 3.14+
 if sys.version_info >= (3, 14):
@@ -52,7 +54,8 @@ AVAILABLE_FORMS = set()
 FORM_INDEX: Dict[str, Dict[str, Any]] = {}
 # Embeddings instance (initialized at startup if API_KEY is present)
 EMBEDDINGS = None
-API_KEY = os.getenv("GENERATIVE_AI_KEY") or "AIzaSyA--qdfAvMMMH-1TkD4H3qf0MEsUPZJyek"
+
+API_KEY = os.getenv("GENERATIVE_AI_KEY") or ""
 
 # Lifespan context manager for startup/shutdown events
 @asynccontextmanager

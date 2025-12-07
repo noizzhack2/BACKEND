@@ -1,7 +1,9 @@
 from typing import List, Dict, Any, Callable
+import os
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from parse_form_helper import AdaptiveForm
+from langchain_google_genai import ChatGoogleGenerativeAI
 from pydantic import Field 
 
 class FormRequest(BaseModel):
@@ -39,9 +41,37 @@ def register_routes(
 
         results: List[MatchedForm] = []
         embeddings = embeddings_provider()
-        # Prepare user keywords from text (simple tokenization)
-        text_lower = user_text.lower()
+
+        # Optionally expand the user request with semantically related terms via LLM
+        def expand_query(text: str) -> str:
+            api_key = os.getenv("GENERATIVE_AI_KEY")
+            print("Expanding query using LLM...", text)
+            if not api_key:
+                return text
+            try:
+                llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=api_key)
+                prompt = (
+                    "You are a helpful assistant. Given a short user request, "
+                    "produce a compact comma-separated list of closely related words and phrases "
+                    "in English and Hebrew that capture the same context (no explanations).\n\n"
+                    f"Request: {text}\nRelated terms:"
+                )
+                resp = llm.invoke(prompt)
+                related = ""
+                try:
+                    related = resp.content if hasattr(resp, "content") else str(resp)
+                except Exception:
+                    related = str(resp)
+                # Append related terms to original text for richer embedding
+                return f"{text}\nRelated: {related}"
+            except Exception:
+                return text
+
+        augmented_text = expand_query(user_text)
+        # Prepare user keywords from augmented text (simple tokenization)
+        text_lower = augmented_text.lower()
         user_tokens = {t for t in [w.strip(" ,.:;()[]{}\n\t").lower() for w in text_lower.split()] if t}
+        print("Augmented user text for matching:", user_tokens)
 
         def extract_form_keywords(content: str) -> List[str]:
             lines = content.splitlines()
@@ -59,16 +89,21 @@ def register_routes(
             return []
 
         def keyword_overlap_score(form_keywords: List[str]) -> float:
+            print("Calculating keyword overlap score...", user_text, form_keywords)
             if not form_keywords or not user_tokens:
                 return 0.0
             kws = {k.strip().lower() for k in form_keywords if k.strip()}
             overlap = kws.intersection(user_tokens)
+            print("Keyword overlap:", overlap)
             # Jaccard-like: overlap / sqrt(len(kws)*len(user_tokens)) to normalize
             denom = (len(kws) * len(user_tokens)) ** 0.5
-            return float(len(overlap) / denom)*10 if denom else 0.0
+            res = float(len(overlap) / denom)*10 if denom else 0.0
+            print("Keyword overlap score:", len(overlap), denom, res)
+            return res
 
         if embeddings:
-            user_emb = embeddings.embed_query(user_text)
+            # Use the augmented text to compute the query embedding
+            user_emb = embeddings.embed_query(augmented_text)
             for form_name, info in form_index.items():
                 form_emb = info.get("embedding") or []
                 # Embedding similarity
@@ -76,10 +111,10 @@ def register_routes(
                 # Keyword-based score
                 form_keywords = extract_form_keywords(info.get("content", ""))
                 kw_score = keyword_overlap_score(form_keywords)
-                # Combine scores (weighted): 0.7 embeddings + 0.3 keywords
-                print(f"Form '{form_name}': emb_score={emb_score}, kw_score={kw_score}")
-                combined = 0.4 * emb_score + 0.6 * kw_score
-                if combined > 0.4:
+                # Combine scores (weighted); favor embeddings but include keywords for robustness
+                print(f"Form: {form_name}, Embedding score: {emb_score}, Keyword score: {kw_score}")
+                combined = 0.3 * emb_score + 0.7 * kw_score
+                if combined > 0.2:
                     results.append(MatchedForm(title=form_name, score=round(combined, 2)))
             results.sort(key=lambda x: x.score, reverse=True)
             return MatchedFormsResponse(results=results)
