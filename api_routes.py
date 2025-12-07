@@ -8,6 +8,7 @@ from pydantic import Field
 
 class FormRequest(BaseModel):
     user_request: str = Field(description="The user's natural language request for a form (e.g., 'I need a trip expense report form').")
+    exclude: List[str] = Field(default_factory=list, description="List of form titles to exclude from matching results.")
 
 
 class MatchedForm(BaseModel):
@@ -36,6 +37,8 @@ def register_routes(
             raise HTTPException(status_code=500, detail="No indexed forms available. Ensure data folder contains form files.")
 
         user_text = (request.user_request or "").strip()
+        # Normalize exclude list for comparison
+        exclude_set = {e.strip().lower() for e in (request.exclude or []) if e and e.strip()}
         if not user_text:
             raise HTTPException(status_code=414, detail="לא נשלח טקסט בבקשה. נסה לנסח בקשה בעברית או באנגלית.")
 
@@ -52,9 +55,9 @@ def register_routes(
                 llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=api_key)
                 prompt = (
                     "You are a helpful assistant. Given a short user request, return a compact, "
-                    "high-context expansion: a comma-separated list of domain-specific synonyms, each has ONLY one noun word!, "
-                    "related entities, intents, actions, attributes, and common acronyms in BOTH English!! and Hebrew!!. "
-                    "Focus on meaningful terms only (no stopwords, no explanations, no numbering, no verbs). "
+                    "high-context expansion: a comma-separated list of domain-specific synonyms, each have ONLY one NOUN WORD!!!!, "
+                    "related entities, intents, attributes,nouns and common acronyms in BOTH English!! and Hebrew!!. "
+                    "Focus on meaningful terms only (no stopwords, no explanations, no numbering, NO verbs, ONLY!!! **ONE WORD** PHRASE). "
                     "Keep it under ~60 tokens, maximize semantic coverage.\n\n"
                     f"Request: {text}\nRelated terms:"
                 )
@@ -117,6 +120,10 @@ def register_routes(
                 print(f"Form: {form_name}, Embedding score: {emb_score}, Keyword score: {kw_score}")
                 combined = 0.3 * emb_score + 0.7 * kw_score
                 if combined > 0.2:
+                    # Apply exclusion filter
+                    print("exclude set:", exclude_set)
+                    if form_name.strip().lower() in exclude_set:
+                        continue
                     results.append(MatchedForm(title=form_name, score=round(combined, 2)))
             results.sort(key=lambda x: x.score, reverse=True)
             return MatchedFormsResponse(results=results)
@@ -124,6 +131,8 @@ def register_routes(
             text = user_text.lower()
             for form_name in form_index:
                 if form_name in text or text in form_name:
+                    if form_name.strip().lower() in exclude_set:
+                        continue
                     results.append(MatchedForm(title=form_name, score=0.0))
             return MatchedFormsResponse(results=results)
 
