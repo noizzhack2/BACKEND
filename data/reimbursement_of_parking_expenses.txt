@@ -1,0 +1,47 @@
+Reimbursement of Parking Expenses Form
+טופס החזר הוצאות חניה
+
+Keywords / מילות מפתח:
+parking, car, vehicle, lot, garage, meter, receipt, reimbursement, parking expenses, parking fee, parking cost, ticket, validation, חניה, רכב, מכונית, חניון, מדחן, קבלה, החזר, הוצאות חניה, עלות חניה, דמי חניה, כרטיס
+
+Purpose / מטרה:
+This form is used to request reimbursement for parking expenses incurred during business travel, client meetings, or company-related activities.
+טופס זה משמש לבקשת החזר הוצאות חניה שנגרמו במהלך נסיעות עסקיות, פגישות לקוחות או פעילויות הקשורות לחברה.
+
+Endpoint URL / כתובת קצה:
+http://parking_expense.com
+
+Instructions / הנחיות:
+1. Complete all required fields marked with an asterisk (*) / השלם את כל השדות הנדרשים המסומנים בכוכבית (*).
+2. Attach the parking receipt or ticket / צירף את קבלת החניה או הכרטיס.
+3. Submit within 30 days of the expense / הגש תוך 30 יום ממועד ההוצאה.
+4. Expenses must comply with company travel policy / הוצאות חייבות לעמוד במדיניות נסיעות של החברה.
+
+Form Fields / שדות הטופס:
+
+Only the following fields are required:
+   - Date (required) / תאריך (נדרש)
+   API Field Name: date
+   - Location (required) / מיקום (נדרש)
+   API Field Name: location
+   - Car Number (required) / מספר רכב (נדרש)
+   API Field Name: car_number
+   - Hours Amount (required) / מספר שעות (נדרש)
+   API Field Name: hours_amount
+   - Notes (optional) / הערות (אופציונלי)
+   API Field Name: notes
+   - Amount (required) / סכום (נדרש)
+   API Field Name: amount
+
+Purpose:
+This form is used to request reimbursement for parking expenses. Provide the following: date, location, car number, number of hours, notes, and total amount.
+
+Instructions:
+1. Complete all six fields (including Notes).
+2. Attach a valid parking receipt or ticket.
+3. Submit within 30 days of the expense.
+
+הנחיות:
+1. השלם את כל ששת השדות (כולל הערות).
+2. צרף קבלת חניה תקפה או כרטיס.
+3. הגש תוך 30 יום ממועד ההוצאה.
