@@ -236,21 +236,19 @@ def register_routes(
                     if "food" in form_name or "meal" in form_name:
                         matched_form = form_name
                         form_content = info["content"]
-                        best_score = 1.0
                         parsed_form = parse_form_from_text(matched_form, form_content)
-                        parsed_form.score = 1.0
                         return parsed_form
 
             embeddings = embeddings_provider()
             if embeddings:
                 user_emb = embeddings.embed_query(user_text)
-                best_score = -1.0
                 best_form = None
+                best_score_local = -1.0
                 for form_name, info in form_index.items():
                     form_emb = info.get("embedding") or []
                     score = cosine_similarity(user_emb, form_emb)
-                    if score > best_score:
-                        best_score = score
+                    if score > best_score_local:
+                        best_score_local = score
                         best_form = (form_name, info["content"])
                 if best_form is None:
                     raise HTTPException(status_code=414, detail="לא נמצא טופס מתאים לבקשה שלך. נסה לנסח מחדש או לבחור טופס קיים.")
@@ -262,7 +260,6 @@ def register_routes(
                     if form_name in text or text in form_name:
                         matched_form = form_name
                         form_content = info["content"]
-                        best_score = 0.0
                         break
                 if not matched_form:
                     raise HTTPException(status_code=414, detail=f"לא נמצא טופס מתאים לבקשה שלך. נסה לנסח מחדש או לבחור טופס קיים. הטפסים הזמינים: {sorted(list(form_index.keys()))}")
@@ -273,7 +270,6 @@ def register_routes(
 
         try:
             parsed_form = parse_form_from_text(matched_form, form_content)
-            parsed_form.score = round(best_score, 2)
             return parsed_form
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Failed to parse form '{matched_form}': {str(e)}")
