@@ -4,15 +4,15 @@ import sys
 import warnings
 from contextlib import asynccontextmanager
 from typing import List, Literal, Optional, Dict, Any
-from pydantic import BaseModel, Field 
-from parse_form_helper import parse_form_from_text, AdaptiveForm, FormField
+from pydantic import BaseModel, Field
+from models import AdaptiveForm, FormField
+from methods import parse_form_from_text
 import numpy as np
 # FastAPI Imports
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 from api_routes import register_routes
-from api_route_chat import register_chat_routes
 
 # LangChain Imports
 from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
@@ -24,6 +24,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.documents import Document
 import os
 from dotenv import load_dotenv
+
 load_dotenv()
 
 # Silence langchain/old-pydantic compatibility warning on Python 3.14+
@@ -39,7 +40,6 @@ EMBEDDING_MODEL = "text-embedding-004"
 LLM_MODEL = "gemini-2.5-flash"
 DIRECTORY_PATH = "data"
 PERSIST_DIR = "./chroma_db_py"
-
 
 # --- 2. Pydantic Schema Definitions (Same as before) ---
 
@@ -58,6 +58,7 @@ FORM_INDEX: Dict[str, Dict[str, Any]] = {}
 EMBEDDINGS = None
 
 API_KEY = os.getenv("GENERATIVE_AI_KEY") or ""
+
 
 # Lifespan context manager for startup/shutdown events
 @asynccontextmanager
@@ -104,6 +105,7 @@ async def lifespan(app: FastAPI):
     # Shutdown logic (if needed)
     print("🛑 API shutting down...")
 
+
 # Initialize FastAPI with lifespan
 API = FastAPI(title="Adaptive Form Generator API", lifespan=lifespan)
 
@@ -128,9 +130,11 @@ API.add_middleware(
     allow_headers=["*"],
 )
 
+
 def format_docs(docs: List[Document]) -> str:
     """Combines the content of the retrieved documents into a single string."""
     return "\n\n".join(doc.page_content for doc in docs)
+
 
 def cosine_similarity(vec_a, vec_b) -> float:
     try:
@@ -144,6 +148,7 @@ def cosine_similarity(vec_a, vec_b) -> float:
     except Exception:
         return 0.0
 
+
 def get_available_forms():
     """Scan DIRECTORY_PATH for available form names (filenames without extension)."""
     forms = set()
@@ -153,26 +158,27 @@ def get_available_forms():
                 forms.add(os.path.splitext(fname)[0].lower())
     return forms
 
+
 def build_rag_chain():
     """Initializes and builds the RAG chain for form generation."""
-    
+
     # Check if API key is available
     if not API_KEY:
         print("⚠️ Warning: GENERATIVE_AI_KEY not set. RAG features disabled.")
         return None
-    
+
     # Load and Index Data (The same stable loading logic)
     print("🛠️ Starting Indexing Phase...")
-    
+
     try:
         # Loaders are split by file type to avoid configuration errors.
         pdf_loader = DirectoryLoader(DIRECTORY_PATH, glob="**/*.pdf", loader_cls=PyPDFLoader, silent_errors=True)
         txt_loader = DirectoryLoader(DIRECTORY_PATH, glob="**/*.txt", loader_cls=TextLoader, silent_errors=True)
-        
+
         pdf_docs: List[Document] = pdf_loader.load()
         txt_docs: List[Document] = txt_loader.load()
         documents: List[Document] = pdf_docs + txt_docs
-        
+
         # Define LLM
         llm = ChatGoogleGenerativeAI(model=LLM_MODEL, google_api_key=API_KEY)
         llm_form_generator = llm.with_structured_output(AdaptiveForm)
@@ -199,27 +205,27 @@ def build_rag_chain():
             vectorstore = Chroma.from_documents(documents=chunks, embedding=embeddings, persist_directory=PERSIST_DIR)
             retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
             print(f"✅ Indexing complete. {len(chunks)} chunks indexed.")
-            
+
             chain = (
-                {
-                    "context": retriever | format_docs, 
-                    "question": RunnablePassthrough()
-                }
-                | form_prompt
-                | llm_form_generator
+                    {
+                        "context": retriever | format_docs,
+                        "question": RunnablePassthrough()
+                    }
+                    | form_prompt
+                    | llm_form_generator
             )
         else:
             print(f"⚠️ Warning: No documents found in '{DIRECTORY_PATH}'. Retriever will use empty context.")
             # Chain without context when no documents are available
             chain = (
-                {
-                    "context": lambda x: "",  # Empty context
-                    "question": RunnablePassthrough()
-                }
-                | form_prompt
-                | llm_form_generator
+                    {
+                        "context": lambda x: "",  # Empty context
+                        "question": RunnablePassthrough()
+                    }
+                    | form_prompt
+                    | llm_form_generator
             )
-        
+
         return chain
     except Exception as e:
         print(f"⚠️ Error initializing RAG chain: {e}")
@@ -229,11 +235,9 @@ def build_rag_chain():
 # --- 4. REST API Endpoint ---
 # Routes are registered from api_routes.py for clarity.
 register_routes(API, FORM_INDEX, lambda: EMBEDDINGS, parse_form_from_text, cosine_similarity)
-register_chat_routes(API)
-
 
 # --- 5. Run the API (For standalone execution) ---
 if __name__ == "__main__":
     # Ensure ChromaDB server is running if not using persistent local mode (docker run -d -p 8000:8000 --name chroma-server chromadb/chroma)
     print("Starting Uvicorn server...")
-    uvicorn.run("main:API", host="0.0.0.0", port=8000, reload=False) # Use reload=True for development
+    uvicorn.run("main:API", host="0.0.0.0", port=8000, reload=False)  # Use reload=True for development
