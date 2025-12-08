@@ -22,6 +22,7 @@ class AdaptiveForm(BaseModel):
     description: str = Field(description="A brief explanation of the form's purpose.")
     fields: List[FormField] = Field(description="A list of all required input fields.")
     endpoint:str = Field(description="The API endpoint to submit the form data to.", default="/submit_form")
+    instruction_file_name: str = Field(description="The source instruction file name (e.g., 'reimbursement_of_parking_expenses.txt').", default="")
 
 def parse_form_from_text(form_name: str, form_content: str) -> AdaptiveForm:
     """
@@ -170,5 +171,6 @@ def parse_form_from_text(form_name: str, form_content: str) -> AdaptiveForm:
         title=title,
         description=description,
         fields=fields,
-        endpoint=endpoint_url
+        endpoint=endpoint_url,
+        instruction_file_name=form_name
     )
