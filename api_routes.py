@@ -1,34 +1,17 @@
 from typing import List, Dict, Any, Callable
 import os
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-from parse_form_helper import AdaptiveForm
+from models import *
 from langchain_google_genai import ChatGoogleGenerativeAI
-from pydantic import Field 
-
-class FormRequest(BaseModel):
-    user_request: str = Field(description="The user's natural language request for a form (e.g., 'I need a trip expense report form').")
-    exclude: List[str] = Field(default_factory=list, description="List of form titles to exclude from matching results.")
-
-
-class MatchedForm(BaseModel):
-    title: str
-    score: float
-    title_heb: str | None = None
-    description_en: str | None = None
-    description_heb: str | None = None
-
-
-class MatchedFormsResponse(BaseModel):
-    results: List[MatchedForm]
+from methods import find_matching_form, process_chat_message
 
 
 def register_routes(
-    api: FastAPI,
-    form_index: Dict[str, Dict[str, Any]],
-    embeddings_provider: Callable[[], Any],
-    parse_form_from_text,
-    cosine_similarity,
+        api: FastAPI,
+        form_index: Dict[str, Dict[str, Any]],
+        embeddings_provider: Callable[[], Any],
+        parse_form_from_text,
+        cosine_similarity,
 ):
     @api.post("/matched_forms", response_model=MatchedFormsResponse)
     def matched_forms_endpoint(request: FormRequest):  # type: ignore[attr-defined]
@@ -37,7 +20,8 @@ def register_routes(
         Each result contains 'title' and 'score'.
         """
         if not form_index:
-            raise HTTPException(status_code=500, detail="No indexed forms available. Ensure data folder contains form files.")
+            raise HTTPException(status_code=500,
+                                detail="No indexed forms available. Ensure data folder contains form files.")
 
         user_text = (request.user_request or "").strip()
         # Normalize exclude list for comparison
@@ -152,7 +136,7 @@ def register_routes(
             print("Keyword overlap:", overlap)
             # Jaccard-like: overlap / sqrt(len(kws)*len(user_tokens)) to normalize
             denom = (len(kws) * len(user_tokens)) ** 0.5
-            res = float(len(overlap) / denom)*10 if denom else 0.0
+            res = float(len(overlap) / denom) * 10 if denom else 0.0
             print("Keyword overlap score:", len(overlap), denom, res)
             return res
 
@@ -215,66 +199,85 @@ def register_routes(
                     ))
             return MatchedFormsResponse(results=results)
 
-    @api.post("/generate_form", response_model=AdaptiveForm)
-    def generate_form_endpoint(request: FormRequest):  # type: ignore[attr-defined]
+    @api.post("/start_chat", response_model=ChatResponse)
+    def start_chat(request: StartChatRequest):  # type: ignore[attr-defined]
         """
         Accepts a user request (in Hebrew or English) and returns a structured JSON schema for an adaptive form.
         Uses precomputed form embeddings (from `form_index`) to select the best match.
         Supports both RTL (Hebrew) and LTR (English) text.
         """
+        api_key = os.getenv("GENERATIVE_AI_KEY")
+        if not api_key:
+            raise HTTPException(status_code=500, detail="GENERATIVE_AI_KEY not configured")
+
         if not form_index:
-            raise HTTPException(status_code=500, detail="No indexed forms available. Ensure data folder contains form files.")
+            raise HTTPException(status_code=500,
+                                detail="No indexed forms available. Ensure data folder contains form files.")
+
+        form_name = (request.form_name or "").strip()
+        if not form_name:
+            raise HTTPException(status_code=400, detail="Message cannot be empty")
 
         try:
-            user_text = (request.user_request or "").strip()
-            if not user_text:
-                raise HTTPException(status_code=414, detail="לא נשלח טקסט בבקשה. נסה לנסח בקשה בעברית או באנגלית.")
+            # Use the extracted logic to find matching form
+            match_result = find_matching_form(form_name, form_index, embeddings_provider, cosine_similarity)
 
-            # Primary: try to match by instruction file name from data folder
-            user_text_l = user_text.lower()
-            for form_name, info in form_index.items():
-                fn_l = form_name.lower()
-                if user_text_l == fn_l or user_text_l in fn_l or fn_l in user_text_l:
-                    matched_form = form_name
-                    form_content = info["content"]
-                    parsed_form = parse_form_from_text(matched_form, form_content)
-                    return parsed_form
+            matched_form, form_content = match_result
 
-            # Removed keyword-based shortcuts; selection now relies on filename match or embeddings
-
-            embeddings = embeddings_provider()
-            if embeddings:
-                user_emb = embeddings.embed_query(user_text)
-                best_form = None
-                best_score_local = -1.0
-                for form_name, info in form_index.items():
-                    form_emb = info.get("embedding") or []
-                    score = cosine_similarity(user_emb, form_emb)
-                    if score > best_score_local:
-                        best_score_local = score
-                        best_form = (form_name, info["content"])
-                if best_form is None:
-                    # No relevant form found: return an empty AdaptiveForm object
-                    return AdaptiveForm(title="", description="", fields=[], endpoint="/submit_form", instruction_file_name="")
-                matched_form, form_content = best_form
-            else:
-                text = user_text.lower()
-                matched_form = None
-                for form_name, info in form_index.items():
-                    if form_name in text or text in form_name:
-                        matched_form = form_name
-                        form_content = info["content"]
-                        break
-                if not matched_form:
-                    # No relevant form found: return an empty AdaptiveForm object
-                    return AdaptiveForm(title="", description="", fields=[], endpoint="/submit_form", instruction_file_name="")
-        except HTTPException:
-            raise
-        except Exception:
-            raise HTTPException(status_code=500, detail="Failed to match form by semantic similarity.")
-
-        try:
             parsed_form = parse_form_from_text(matched_form, form_content)
-            return parsed_form
+            llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=api_key)
+            fields = parsed_form.fields or []
+
+            # Use extracted logic to process the chat message
+            response_text, updated_fields, is_complete, updated_history = process_chat_message(
+                user_message="",
+                fields=fields,
+                conversation_history=[],
+                llm=llm
+            )
+
+            return ChatResponse(
+                response=response_text,
+                fields=updated_fields,
+                is_complete=is_complete,
+                history=updated_history
+            )
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Failed to parse form '{matched_form}': {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Error in start_chat: {e}")
+
+    @api.post("/chat", response_model=ChatResponse)
+    def chat_endpoint(request: ChatMessage):
+        """
+        Handles conversational form filling.
+        The AI extracts information from user messages and fills form fields.
+        Returns updated form fields and asks for missing required information.
+        """
+        api_key = os.getenv("GENERATIVE_AI_KEY")
+        if not api_key:
+            raise HTTPException(status_code=500, detail="GENERATIVE_AI_KEY not configured")
+
+        user_message = (request.message or "").strip()
+        if not user_message:
+            raise HTTPException(status_code=400, detail="Message cannot be empty")
+
+        try:
+            llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=api_key)
+            fields = request.fields or []
+
+            # Use extracted logic to process the chat message
+            response_text, updated_fields, is_complete, updated_history = process_chat_message(
+                user_message=user_message,
+                fields=fields,
+                conversation_history=request.history,
+                llm=llm
+            )
+
+            return ChatResponse(
+                response=response_text,
+                fields=updated_fields,
+                is_complete=is_complete,
+                history=updated_history
+            )
+
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to process chat message: {str(e)}")
