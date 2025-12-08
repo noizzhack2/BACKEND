@@ -1,12 +1,12 @@
 Fuel Expense Reimbursement Form
 טופס בקשה להחזר הוצאות דלק
 
-Keywords / מילות מפתח:
-fuel, gas, petrol, gasoline, diesel, vehicle, car, truck, transportation, mileage, odometer, fuel station, pump, fuel expenses, reimbursement, business travel, car reimbursement, fuel cost, drive, driving, miles, kilometers, vehicle use, car expenses, travel reimbursement, fuel reimbursement, דלק, גז, בנזין, דיזל, כלי רכב, מכונית, משאית, תחבורה, קילומטרים, אודומטר, תחנת דלק, דלק, הוצאות דלק, החזר, נסיעות עסקיות, החזר מכונית, עלות דלק, נסיעה, קילומטר, שימוש כלי רכב
-
 Purpose / מטרה:
 This form is used to request reimbursement for fuel expenses incurred during business travel or authorized vehicle use.
 טופס זה משמש לבקשת החזר הוצאות דלק שנגרמו במהלך נסיעות עסקיות או שימוש מורשה בכלי רכב.
+
+Endpoint / כתובת קצה:
+http://fuel_expense.com
 
 Instructions / הנחיות:
 1. Fill in all required fields marked with an asterisk (*) / מלא את כל השדות הנדרשים המסומנים בכוכבית (*)

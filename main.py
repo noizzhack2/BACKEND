@@ -9,6 +9,7 @@ from parse_form_helper import parse_form_from_text, AdaptiveForm, FormField
 import numpy as np
 # FastAPI Imports
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 from api_routes import register_routes
 from api_route_chat import register_chat_routes
@@ -105,6 +106,27 @@ async def lifespan(app: FastAPI):
 
 # Initialize FastAPI with lifespan
 API = FastAPI(title="Adaptive Form Generator API", lifespan=lifespan)
+
+# CORS setup to allow local frontend and deployments
+allowed_origins = [
+    "http://localhost:4200",
+    "http://127.0.0.1:4200",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+
+# Optionally allow additional origins via env var (comma separated)
+extra_origins = os.getenv("CORS_EXTRA_ORIGINS", "").strip()
+if extra_origins:
+    allowed_origins.extend([o.strip() for o in extra_origins.split(",") if o.strip()])
+
+API.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 def format_docs(docs: List[Document]) -> str:
     """Combines the content of the retrieved documents into a single string."""
