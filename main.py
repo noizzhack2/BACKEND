@@ -11,6 +11,7 @@ import numpy as np
 from fastapi import FastAPI, HTTPException
 import uvicorn
 from api_routes import register_routes
+from api_route_chat import register_chat_routes
 
 # LangChain Imports
 from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
@@ -206,6 +207,7 @@ def build_rag_chain():
 # --- 4. REST API Endpoint ---
 # Routes are registered from api_routes.py for clarity.
 register_routes(API, FORM_INDEX, lambda: EMBEDDINGS, parse_form_from_text, cosine_similarity)
+register_chat_routes(API)
 
 
 # --- 5. Run the API (For standalone execution) ---
