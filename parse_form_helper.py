@@ -94,18 +94,33 @@ def parse_form_from_text(form_name: str, form_content: str) -> AdaptiveForm:
         ):
             # Extract field name (usually before the opening parenthesis)
             if "(" in line_stripped:
-                field_name = line_stripped.split("(")[0].strip().lstrip("- ").strip()
-                # Extract English name if bilingual
-                if "/" in field_name:
-                    field_name = field_name.split("/")[0].strip()
-                
+                raw_field = line_stripped.split("(")[0].strip().lstrip("- ").strip()
+                # Extract English + Hebrew names if bilingual: "English / עברית"
+                hebrew_label: Optional[str] = None
+                field_name = raw_field
+                if "/" in raw_field:
+                    parts = [p.strip() for p in raw_field.split("/")]
+                    if parts:
+                        field_name = parts[0] or raw_field
+                    if len(parts) > 1:
+                        hebrew_label = parts[1] or None
+                print(f"Extracted hebrew field name: {hebrew_label}")
                 if field_name and len(field_name) > 2 and field_name not in field_names:
                     field_names.add(field_name)
                     field_type = "text"
                     # Determine required flag based on label
                     required_flag = ("required" in lower_line or "נדרש" in line_stripped)
                     
-                    # Determine field type
+                    raw_field = line_stripped.split("(")[0].strip().lstrip("- ").strip()
+                    # Extract English + Hebrew names if bilingual: "English / עברית"
+                    hebrew_label: Optional[str] = None
+                    field_name = raw_field
+                    if "/" in raw_field:
+                        parts = [p.strip() for p in raw_field.split("/")]
+                        if parts:
+                            field_name = parts[0] or raw_field
+                        if len(parts) > 1:
+                            hebrew_label = parts[1] or None
                     if any(word in line_stripped.lower() for word in ["date", "תאריך", "MM/DD"]):
                         field_type = "date"
                     elif any(word in line_stripped.lower() for word in ["select", "בחר", "dropdown"]):
@@ -146,24 +161,23 @@ def parse_form_from_text(form_name: str, form_content: str) -> AdaptiveForm:
 
                     fields.append(FormField(
                         name=field_name,
+                        label=hebrew_label or field_name,
                         type=field_type,
-                        label=field_name,
+                        current_value=None,
                         required=required_flag,
                         placeholder=f"Enter {field_name.lower()}",
-                        current_value=None,
                         icon=icon_name,
                         api_field_name=api_field_name
                     ))
-    
-    # If no fields were extracted, create a generic field
+
     if not fields:
         fields.append(FormField(
             name="details",
-            type="textarea",
             label="Form Details",
+            type="textarea",
+            current_value=None,
             required=True,
             placeholder="Enter your request details",
-            current_value=None,
             icon="notes",
             api_field_name="details"
         ))
