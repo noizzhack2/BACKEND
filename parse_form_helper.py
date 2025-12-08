@@ -10,10 +10,11 @@ class FormField(BaseModel):
     type: Literal["text", "number", "email", "textarea", "checkbox", "date", "select"] = Field(
         description="The HTML input type."
     )
-    initial_value: Optional[Any] = Field(default=None, description="The default value for the field, if any.")
+    current_value: Optional[Any] = Field(default=None, description="The current value for the field, if any.")
     required: bool = Field(description="Whether the field is mandatory.")
     placeholder: Optional[str] = Field(default=None, description="Helper text shown inside the field.")
     icon: Optional[str] = Field(default=None, description="Angular Material icon name associated with the field.")
+    api_field_name: Optional[str] = Field(default=None, description="Canonical API field name for backend payloads.")
     
 # 2.2. Define the complete adaptive form structure
 class AdaptiveForm(BaseModel):
@@ -81,11 +82,15 @@ def parse_form_from_text(form_name: str, form_content: str) -> AdaptiveForm:
         if m:
             endpoint_url = m.group(0)
     
-    # Extract fields from lines that have "required" or "נדרש"
+    # Extract fields from lines that have required/optional markers
     field_names = set()
-    for line in lines:
+    for i, line in enumerate(lines):
         line_stripped = line.strip()
-        if ("required" in line_stripped.lower() or "נדרש" in line_stripped) and line_stripped.startswith("-"):
+        lower_line = line_stripped.lower()
+        # Include both required and optional fields from bullet lines
+        if line_stripped.startswith("-") and (
+            "required" in lower_line or "optional" in lower_line or "נדרש" in line_stripped or "אופציונלי" in line_stripped
+        ):
             # Extract field name (usually before the opening parenthesis)
             if "(" in line_stripped:
                 field_name = line_stripped.split("(")[0].strip().lstrip("- ").strip()
@@ -96,6 +101,8 @@ def parse_form_from_text(form_name: str, form_content: str) -> AdaptiveForm:
                 if field_name and len(field_name) > 2 and field_name not in field_names:
                     field_names.add(field_name)
                     field_type = "text"
+                    # Determine required flag based on label
+                    required_flag = ("required" in lower_line or "נדרש" in line_stripped)
                     
                     # Determine field type
                     if any(word in line_stripped.lower() for word in ["date", "תאריך", "MM/DD"]):
@@ -110,6 +117,19 @@ def parse_form_from_text(form_name: str, form_content: str) -> AdaptiveForm:
                         field_type = "number"
                     elif any(word in line_stripped.lower() for word in ["text area", "שדה טקסט"]):
                         field_type = "textarea"
+                    # Heuristic: notes fields should be textarea
+                    elif any(word in lower_line for word in ["notes", "הערות"]):
+                        field_type = "textarea"
+
+                    # Peek ahead for API Field Name mapping near this bullet
+                    api_field_name = None
+                    for j in range(i+1, min(i+4, len(lines))):
+                        nxt = lines[j].strip()
+                        if not nxt:
+                            continue
+                        if nxt.lower().startswith("api field name:"):
+                            api_field_name = nxt.split(":", 1)[1].strip()
+                            break
                     
                     # Assign Angular Material icon by field type
                     type_to_icon = {
@@ -127,10 +147,11 @@ def parse_form_from_text(form_name: str, form_content: str) -> AdaptiveForm:
                         name=field_name,
                         type=field_type,
                         label=field_name,
-                        required=True,
+                        required=required_flag,
                         placeholder=f"Enter {field_name.lower()}",
-                        initial_value=None,
-                        icon=icon_name
+                        current_value=None,
+                        icon=icon_name,
+                        api_field_name=api_field_name
                     ))
     
     # If no fields were extracted, create a generic field
@@ -141,8 +162,9 @@ def parse_form_from_text(form_name: str, form_content: str) -> AdaptiveForm:
             label="Form Details",
             required=True,
             placeholder="Enter your request details",
-            initial_value=None,
-            icon="notes"
+            current_value=None,
+            icon="notes",
+            api_field_name="details"
         ))
     return AdaptiveForm(
         title=title,
