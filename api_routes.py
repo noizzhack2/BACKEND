@@ -14,6 +14,9 @@ class FormRequest(BaseModel):
 class MatchedForm(BaseModel):
     title: str
     score: float
+    title_heb: str | None = None
+    description_en: str | None = None
+    description_heb: str | None = None
 
 
 class MatchedFormsResponse(BaseModel):
@@ -93,6 +96,53 @@ def register_routes(
                     return [kw.strip() for kw in blob.split(",") if kw.strip()]
             return []
 
+        def has_hebrew(text: str) -> bool:
+            return any("\u0590" <= ch <= "\u05FF" for ch in text)
+
+        def has_latin(text: str) -> bool:
+            return any(('a' <= ch.lower() <= 'z') for ch in text)
+
+        def extract_purpose_bilingual(content: str) -> tuple[str, str]:
+            lines = content.splitlines()
+            for i, line in enumerate(lines):
+                low = line.strip().lower()
+                if "purpose" in low or "מטרה" in low:
+                    collected: List[str] = []
+                    for j in range(i + 1, len(lines)):
+                        nxt = lines[j]
+                        if not nxt.strip():
+                            break
+                        collected.append(nxt.strip())
+                    en_lines: List[str] = []
+                    he_lines: List[str] = []
+                    for t in collected:
+                        if has_hebrew(t):
+                            he_lines.append(t)
+                        if has_latin(t) and not has_hebrew(t):
+                            en_lines.append(t)
+                    return (" ".join(en_lines).strip(), " ".join(he_lines).strip())
+            return ("", "")
+
+        def translate_text(text: str, target_lang: str) -> str:
+            api_key = os.getenv("GENERATIVE_AI_KEY")
+            if not text:
+                return ""
+            if not api_key:
+                return text
+            try:
+                llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=api_key)
+                prompt = (
+                    f"Translate the following text to {target_lang}. Return ONLY the translation, no explanations, no quotes.\n"
+                    f"Text: {text}"
+                )
+                resp = llm.invoke(prompt)
+                try:
+                    return resp.content if hasattr(resp, "content") else str(resp)
+                except Exception:
+                    return str(resp)
+            except Exception:
+                return text
+
         def keyword_overlap_score(form_keywords: List[str]) -> float:
             print("Calculating keyword overlap score...", user_tokens, form_keywords)
             if not form_keywords or not user_tokens:
@@ -124,7 +174,21 @@ def register_routes(
                     print("exclude set:", exclude_set)
                     if form_name.strip().lower() in exclude_set:
                         continue
-                    results.append(MatchedForm(title=form_name, score=round(combined, 2)))
+                    purpose_en, purpose_heb = extract_purpose_bilingual(info.get("content", ""))
+                    desc_en = purpose_en or ""
+                    desc_heb = purpose_heb or ""
+                    if not desc_en and desc_heb:
+                        desc_en = translate_text(desc_heb, "English")
+                    if not desc_heb and desc_en:
+                        desc_heb = translate_text(desc_en, "Hebrew")
+                    title_heb = translate_text(form_name, "Hebrew")
+                    results.append(MatchedForm(
+                        title=form_name,
+                        score=round(combined, 2),
+                        title_heb=title_heb,
+                        description_en=desc_en,
+                        description_heb=desc_heb,
+                    ))
             results.sort(key=lambda x: x.score, reverse=True)
             return MatchedFormsResponse(results=results)
         else:
@@ -133,7 +197,22 @@ def register_routes(
                 if form_name in text or text in form_name:
                     if form_name.strip().lower() in exclude_set:
                         continue
-                    results.append(MatchedForm(title=form_name, score=0.0))
+                    info = form_index.get(form_name, {})
+                    purpose_en, purpose_heb = extract_purpose_bilingual(info.get("content", ""))
+                    desc_en = purpose_en or ""
+                    desc_heb = purpose_heb or ""
+                    if not desc_en and desc_heb:
+                        desc_en = translate_text(desc_heb, "English")
+                    if not desc_heb and desc_en:
+                        desc_heb = translate_text(desc_en, "Hebrew")
+                    title_heb = translate_text(form_name, "Hebrew")
+                    results.append(MatchedForm(
+                        title=form_name,
+                        score=0.0,
+                        title_heb=title_heb,
+                        description_en=desc_en,
+                        description_heb=desc_heb,
+                    ))
             return MatchedFormsResponse(results=results)
 
     @api.post("/generate_form", response_model=AdaptiveForm)
