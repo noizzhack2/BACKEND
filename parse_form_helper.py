@@ -18,8 +18,7 @@ class AdaptiveForm(BaseModel):
     title: str = Field(description="A clear and concise title for the form.")
     description: str = Field(description="A brief explanation of the form's purpose.")
     fields: List[FormField] = Field(description="A list of all required input fields.")
-    score: Optional[float] = Field(default=None, description="Semantic similarity score (0-1) for the match.")
-
+    endpoint:str = Field(description="The API endpoint to submit the form data to.", default="/submit_form")
 
 def parse_form_from_text(form_name: str, form_content: str) -> AdaptiveForm:
     """
