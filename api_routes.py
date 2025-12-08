@@ -230,14 +230,17 @@ def register_routes(
             if not user_text:
                 raise HTTPException(status_code=414, detail="לא נשלח טקסט בבקשה. נסה לנסח בקשה בעברית או באנגלית.")
 
-            food_keywords = ["אוכל", "meal", "food", "ארוחה"]
-            if any(k in user_text.lower() for k in food_keywords):
-                for form_name, info in form_index.items():
-                    if "food" in form_name or "meal" in form_name:
-                        matched_form = form_name
-                        form_content = info["content"]
-                        parsed_form = parse_form_from_text(matched_form, form_content)
-                        return parsed_form
+            # Primary: try to match by instruction file name from data folder
+            user_text_l = user_text.lower()
+            for form_name, info in form_index.items():
+                fn_l = form_name.lower()
+                if user_text_l == fn_l or user_text_l in fn_l or fn_l in user_text_l:
+                    matched_form = form_name
+                    form_content = info["content"]
+                    parsed_form = parse_form_from_text(matched_form, form_content)
+                    return parsed_form
+
+            # Removed keyword-based shortcuts; selection now relies on filename match or embeddings
 
             embeddings = embeddings_provider()
             if embeddings:
@@ -251,7 +254,8 @@ def register_routes(
                         best_score_local = score
                         best_form = (form_name, info["content"])
                 if best_form is None:
-                    raise HTTPException(status_code=414, detail="לא נמצא טופס מתאים לבקשה שלך. נסה לנסח מחדש או לבחור טופס קיים.")
+                    # No relevant form found: return an empty AdaptiveForm object
+                    return AdaptiveForm(title="", description="", fields=[], endpoint="/submit_form", instruction_file_name="")
                 matched_form, form_content = best_form
             else:
                 text = user_text.lower()
@@ -262,7 +266,8 @@ def register_routes(
                         form_content = info["content"]
                         break
                 if not matched_form:
-                    raise HTTPException(status_code=414, detail=f"לא נמצא טופס מתאים לבקשה שלך. נסה לנסח מחדש או לבחור טופס קיים. הטפסים הזמינים: {sorted(list(form_index.keys()))}")
+                    # No relevant form found: return an empty AdaptiveForm object
+                    return AdaptiveForm(title="", description="", fields=[], endpoint="/submit_form", instruction_file_name="")
         except HTTPException:
             raise
         except Exception:
