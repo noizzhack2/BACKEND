@@ -12,14 +12,15 @@ class FormField(BaseModel):
     )
     initial_value: Optional[Any] = Field(default=None, description="The default value for the field, if any.")
     required: bool = Field(description="Whether the field is mandatory.")
+    placeholder: Optional[str] = Field(default=None, description="Helper text shown inside the field.")
+    icon: Optional[str] = Field(default=None, description="Angular Material icon name associated with the field.")
     
 # 2.2. Define the complete adaptive form structure
 class AdaptiveForm(BaseModel):
     title: str = Field(description="A clear and concise title for the form.")
     description: str = Field(description="A brief explanation of the form's purpose.")
     fields: List[FormField] = Field(description="A list of all required input fields.")
-    score: Optional[float] = Field(default=None, description="Semantic similarity score (0-1) for the match.")
-
+    endpoint:str = Field(description="The API endpoint to submit the form data to.", default="/submit_form")
 
 def parse_form_from_text(form_name: str, form_content: str) -> AdaptiveForm:
     """
@@ -32,6 +33,7 @@ def parse_form_from_text(form_name: str, form_content: str) -> AdaptiveForm:
     # Extract title (first non-empty line with "Form" in it)
     title = "Reimbursement Form"
     description = "Submit your reimbursement request using this form."
+    endpoint_url = "/submit_form"
     fields = []
     
     for i, line in enumerate(lines):
@@ -60,6 +62,24 @@ def parse_form_from_text(form_name: str, form_content: str) -> AdaptiveForm:
                     description = desc_line
                     break
             break
+
+    # Extract endpoint URL (look for explicit Endpoint line or first URL)
+    for i, line in enumerate(lines):
+        ls = line.strip()
+        if ls.lower().startswith("endpoint url") or "כתובת קצה" in ls:
+            # Next non-empty line should be the URL
+            for j in range(i+1, min(i+4, len(lines))):
+                candidate = lines[j].strip()
+                if candidate:
+                    endpoint_url = candidate
+                    break
+            break
+    # Fallback: search for any http/https URL in the document if not set
+    if endpoint_url == "/submit_form":
+        import re
+        m = re.search(r"https?://[^\s]+", form_content)
+        if m:
+            endpoint_url = m.group(0)
     
     # Extract fields from lines that have "required" or "נדרש"
     field_names = set()
@@ -91,13 +111,26 @@ def parse_form_from_text(form_name: str, form_content: str) -> AdaptiveForm:
                     elif any(word in line_stripped.lower() for word in ["text area", "שדה טקסט"]):
                         field_type = "textarea"
                     
+                    # Assign Angular Material icon by field type
+                    type_to_icon = {
+                        "text": "description",
+                        "number": "calculate",
+                        "email": "email",
+                        "textarea": "notes",
+                        "checkbox": "check_box",
+                        "date": "event",
+                        "select": "list_alt",
+                    }
+                    icon_name = type_to_icon.get(field_type, "description")
+
                     fields.append(FormField(
                         name=field_name,
                         type=field_type,
                         label=field_name,
                         required=True,
                         placeholder=f"Enter {field_name.lower()}",
-                        initial_value=None
+                        initial_value=None,
+                        icon=icon_name
                     ))
     
     # If no fields were extracted, create a generic field
@@ -108,10 +141,12 @@ def parse_form_from_text(form_name: str, form_content: str) -> AdaptiveForm:
             label="Form Details",
             required=True,
             placeholder="Enter your request details",
-            initial_value=None
+            initial_value=None,
+            icon="notes"
         ))
     return AdaptiveForm(
         title=title,
         description=description,
-        fields=fields
+        fields=fields,
+        endpoint=endpoint_url
     )
