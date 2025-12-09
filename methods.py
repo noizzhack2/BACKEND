@@ -1,7 +1,7 @@
 """Helper functions for form parsing from data/ files."""
 
 from typing import Dict, Any, Callable, Tuple, Optional
-from models import FormField, AdaptiveForm
+from models import FormField, AdaptiveForm, ChatResponse
 
 
 def parse_form_from_text(form_name: str, form_content: str) -> AdaptiveForm:
@@ -456,23 +456,23 @@ def update_conversation_history(
 def process_chat_message(
         user_message: str,
         fields: List[FormField],
-        conversation_history: List[Dict[str, str]],
+        history: List[Dict[str, str]],
         llm
-) -> Tuple[str, List[FormField], bool, List[Dict[str, str]]]:
+) -> ChatResponse:
     """
     Process a chat message for conversational form filling.
 
     Args:
         user_message: The user's message
         fields: Current FormField objects
-        conversation_history: Previous conversation messages
+        history: Previous conversation messages
         llm: Language model instance for processing
 
     Returns:
         Tuple of (response_text, updated_fields, is_complete, updated_history)
     """
     # Build the prompt
-    prompt = build_chat_prompt(user_message, fields, conversation_history)
+    prompt = build_chat_prompt(user_message, fields, history)
 
     # Get AI response
     ai_response = llm.invoke(prompt)
@@ -488,6 +488,11 @@ def process_chat_message(
     is_complete = check_form_completion(updated_fields)
 
     # Update conversation history
-    updated_history = update_conversation_history(conversation_history, user_message, response_text)
+    updated_history = update_conversation_history(history, user_message, response_text)
 
-    return response_text, updated_fields, is_complete, updated_history
+    return ChatResponse(
+        response=response_text,
+        fields=updated_fields,
+        is_complete=is_complete,
+        history=updated_history
+    )

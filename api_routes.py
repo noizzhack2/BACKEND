@@ -229,18 +229,11 @@ def register_routes(
             fields = parsed_form.fields or []
 
             # Use extracted logic to process the chat message
-            response_text, updated_fields, is_complete, updated_history = process_chat_message(
+            return process_chat_message(
                 user_message="",
                 fields=fields,
-                conversation_history=[],
+                history=[],
                 llm=llm
-            )
-
-            return ChatResponse(
-                response=response_text,
-                fields=updated_fields,
-                is_complete=is_complete,
-                history=updated_history
             )
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error in start_chat: {e}")
@@ -265,18 +258,11 @@ def register_routes(
             fields = request.fields or []
 
             # Use extracted logic to process the chat message
-            response_text, updated_fields, is_complete, updated_history = process_chat_message(
+            return process_chat_message(
                 user_message=user_message,
                 fields=fields,
-                conversation_history=request.history,
+                history=request.history,
                 llm=llm
-            )
-
-            return ChatResponse(
-                response=response_text,
-                fields=updated_fields,
-                is_complete=is_complete,
-                history=updated_history
             )
 
         except Exception as e:
