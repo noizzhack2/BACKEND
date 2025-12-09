@@ -1,7 +1,7 @@
 """Helper functions for form parsing from data/ files."""
 
 from typing import Dict, Any, Callable, Tuple, Optional
-from models import FormField, AdaptiveForm
+from models import FormField, AdaptiveForm, ChatResponse
 
 
 def parse_form_from_text(form_name: str, form_content: str) -> AdaptiveForm:
@@ -323,9 +323,10 @@ def build_chat_prompt(
                 2. Map extracted information to the appropriate form fields in the language of the user input
                 3. Intelligently infer information (like calculating dates from relative terms like "yesterday", "today")
                 4. Fill BOTH required and optional fields if information is available
-                5. Your response should focus **SOLELY** on what is MISSING or needs correction for next steps
-                6. IMPORTANT: **Do NOT** list the fields you have just filled or extracted in the currect text response. The user sees the form updating automatically. Only mention fields if there is an error with them.
-                7. Be warm, concise, supportive, and natural in conversation
+                5. UPDATE existing field values when the user provides new information for a field that's already filled
+                6. Your response should focus **SOLELY** on what is MISSING or needs correction for next steps
+                7. IMPORTANT: **Do NOT** list the fields you have just filled or extracted in the currect text response. The user sees the form updating automatically. Only mention fields if there is an error with them.
+                8. Be warm, concise, supportive, and natural in conversation
 
     Today's date: {today}
 
@@ -344,6 +345,7 @@ def build_chat_prompt(
     For dates: If user says "yesterday", calculate the actual date. If "today", use {today}.
     For locations: Normalize city names (e.g., "tel aviv" -> "Tel Aviv")
     For notes: Infer purpose or context from the message (e.g., "for an interview" -> "Interview")
+    For updates: If a field already has a value but the user provides new information for it, extract the NEW value to replace the old one.
 
     Return your response in this exact format:
     EXTRACTED_VALUES: {{"field_name": "value", "another_field": "value"}}
@@ -405,8 +407,8 @@ def update_form_fields(
         # Create a copy of the field with updated value
         field_dict = field.model_dump()
 
-        # Only update if field is currently empty and we have a value
-        if field.name in extracted_values and not field.current_value:
+        # Update if we have a value for this field (regardless of whether it's already filled)
+        if field.name in extracted_values:
             field_dict["current_value"] = extracted_values[field.name]
 
         updated_fields.append(FormField(**field_dict))
@@ -456,23 +458,23 @@ def update_conversation_history(
 def process_chat_message(
         user_message: str,
         fields: List[FormField],
-        conversation_history: List[Dict[str, str]],
+        history: List[Dict[str, str]],
         llm
-) -> Tuple[str, List[FormField], bool, List[Dict[str, str]]]:
+) -> ChatResponse:
     """
     Process a chat message for conversational form filling.
 
     Args:
         user_message: The user's message
         fields: Current FormField objects
-        conversation_history: Previous conversation messages
+        history: Previous conversation messages
         llm: Language model instance for processing
 
     Returns:
         Tuple of (response_text, updated_fields, is_complete, updated_history)
     """
     # Build the prompt
-    prompt = build_chat_prompt(user_message, fields, conversation_history)
+    prompt = build_chat_prompt(user_message, fields, history)
 
     # Get AI response
     ai_response = llm.invoke(prompt)
@@ -488,6 +490,11 @@ def process_chat_message(
     is_complete = check_form_completion(updated_fields)
 
     # Update conversation history
-    updated_history = update_conversation_history(conversation_history, user_message, response_text)
+    updated_history = update_conversation_history(history, user_message, response_text)
 
-    return response_text, updated_fields, is_complete, updated_history
+    return ChatResponse(
+        response=response_text,
+        fields=updated_fields,
+        is_complete=is_complete,
+        history=updated_history
+    )
