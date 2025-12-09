@@ -287,7 +287,7 @@ def prepare_conversation_context(history: List[Dict[str, str]]) -> str:
         Formatted conversation history string
     """
     if not history:
-        return "No previous conversation"
+        return "(This is the start of the conversation)"
 
     history_lines = []
     for msg in history:
@@ -330,7 +330,6 @@ def build_chat_prompt(
 
     Today's date: {today}
 
-    Previous conversation:
     {conversation_context}
 
     Current form fields:
@@ -346,6 +345,8 @@ def build_chat_prompt(
     For locations: Normalize city names (e.g., "tel aviv" -> "Tel Aviv")
     For notes: Infer purpose or context from the message (e.g., "for an interview" -> "Interview")
     For updates: If a field already has a value but the user provides new information for it, extract the NEW value to replace the old one.
+
+    IMPORTANT FOR INITIAL MESSAGE: If this is the start of the conversation, DO NOT greet the user. Instead, describe the available form fields and what information is needed.
 
     Return your response in this exact format:
     EXTRACTED_VALUES: {{"field_name": "value", "another_field": "value"}}
