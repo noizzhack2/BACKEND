@@ -7,7 +7,7 @@ from models import FormField, AdaptiveForm
 def parse_form_from_text(form_name: str, form_content: str) -> AdaptiveForm:
     """
     Parse a form from predefined text content in data/ folder.
-    Extracts title, description, and fields from the structured text file.
+    Extracts title, description, endpoint, and bilingual fields from the structured text file.
     Returns an AdaptiveForm object with all parsed information.
     """
     lines = form_content.split('\n')
@@ -16,17 +16,14 @@ def parse_form_from_text(form_name: str, form_content: str) -> AdaptiveForm:
     title = "Reimbursement Form"
     description = "Submit your reimbursement request using this form."
     endpoint_url = "/submit_form"
-    fields = []
+    fields: list[FormField] = []
 
     for i, line in enumerate(lines):
         line_stripped = line.strip()
         if not line_stripped:
             continue
-
-        # Extract title from first line
         if i < 5 and "Form" in line_stripped:
             title = line_stripped
-            # Try to extract English title before "/" if bilingual
             if "/" in title:
                 title = title.split("/")[0].strip()
             break
@@ -34,12 +31,10 @@ def parse_form_from_text(form_name: str, form_content: str) -> AdaptiveForm:
     # Extract description (Purpose section)
     for i, line in enumerate(lines):
         if "Purpose" in line or "מטרה" in line:
-            # Get the next non-empty line as description
             for j in range(i + 1, min(i + 5, len(lines))):
                 if lines[j].strip() and ":" not in lines[j]:
                     desc_line = lines[j].strip()
                     if "/" in desc_line:
-                        # Take only English part if bilingual
                         desc_line = desc_line.split("/")[0].strip()
                     description = desc_line
                     break
@@ -49,7 +44,6 @@ def parse_form_from_text(form_name: str, form_content: str) -> AdaptiveForm:
     for i, line in enumerate(lines):
         ls = line.strip()
         if ls.lower().startswith("endpoint url") or "כתובת קצה" in ls:
-            # Next non-empty line should be the URL
             for j in range(i + 1, min(i + 4, len(lines))):
                 candidate = lines[j].strip()
                 if candidate:
@@ -63,77 +57,88 @@ def parse_form_from_text(form_name: str, form_content: str) -> AdaptiveForm:
         if m:
             endpoint_url = m.group(0)
 
-    # Extract fields from lines that have required/optional markers
+    # Extract fields: accept bilingual bullets or ones with markers
+    import re
     field_names = set()
     for i, line in enumerate(lines):
         line_stripped = line.strip()
+        if not line_stripped.startswith("-"):
+            continue
         lower_line = line_stripped.lower()
-        # Include both required and optional fields from bullet lines
-        if line_stripped.startswith("-") and (
-                "required" in lower_line or "optional" in lower_line or "נדרש" in line_stripped or "אופציונלי" in line_stripped
-        ):
-            # Extract field name (usually before the opening parenthesis)
-            if "(" in line_stripped:
-                field_name = line_stripped.split("(")[0].strip().lstrip("- ").strip()
-                # Extract English name if bilingual
-                if "/" in field_name:
-                    field_name = field_name.split("/")[0].strip()
+        has_marker = ("required" in lower_line or "optional" in lower_line or "נדרש" in line_stripped or "אופציונלי" in line_stripped)
+        is_bilingual = ("/" in line_stripped)
+        if not (has_marker or is_bilingual):
+            continue
 
-                if field_name and len(field_name) > 2 and field_name not in field_names:
-                    field_names.add(field_name)
-                    field_type = "text"
-                    # Determine required flag based on label
-                    required_flag = ("required" in lower_line or "נדרש" in line_stripped)
+        cleaned = re.sub(r"\([^)]*\)", "", line_stripped)
+        cleaned = cleaned.lstrip("- ").strip()
+        parts = [p.strip() for p in cleaned.split("/", 1)]
+        eng_name = parts[0] if parts else cleaned
+        heb_name = parts[1] if len(parts) > 1 else None
 
-                    # Determine field type
-                    if any(word in line_stripped.lower() for word in ["date", "תאריך", "MM/DD"]):
-                        field_type = "date"
-                    elif any(word in line_stripped.lower() for word in ["select", "בחר", "dropdown"]):
-                        field_type = "select"
-                    elif any(word in line_stripped.lower() for word in ["checkbox", "תיבת סימון"]):
-                        field_type = "checkbox"
-                    elif any(word in line_stripped.lower() for word in ["numeric", "מספר", "number"]):
-                        field_type = "number"
-                    elif any(word in line_stripped.lower() for word in ["currency", "כספי", "amount"]):
-                        field_type = "number"
-                    elif any(word in line_stripped.lower() for word in ["text area", "שדה טקסט"]):
-                        field_type = "textarea"
-                    # Heuristic: notes fields should be textarea
-                    elif any(word in lower_line for word in ["notes", "הערות"]):
-                        field_type = "textarea"
+        field_name = eng_name
+        if not field_name or field_name in field_names:
+            continue
+        field_names.add(field_name)
 
-                    # Peek ahead for API Field Name mapping near this bullet
-                    api_field_name = None
-                    for j in range(i + 1, min(i + 4, len(lines))):
-                        nxt = lines[j].strip()
-                        if not nxt:
-                            continue
-                        if nxt.lower().startswith("api field name:"):
-                            api_field_name = nxt.split(":", 1)[1].strip()
-                            break
+        # Infer type from original (lowercased) line
+        field_type = "text"
+        if any(word in lower_line for word in ["date", "תאריך", "mm/dd"]):
+            field_type = "date"
+        elif any(word in lower_line for word in ["select", "בחר", "dropdown"]):
+            field_type = "select"
+        elif any(word in lower_line for word in ["checkbox", "תיבת סימון"]):
+            field_type = "checkbox"
+        elif any(word in lower_line for word in ["numeric", "מספר", "number"]):
+            field_type = "number"
+        elif any(word in lower_line for word in ["currency", "כספי", "amount"]):
+            field_type = "number"
+        elif any(word in lower_line for word in ["text area", "שדה טקסט"]):
+            field_type = "textarea"
+        elif any(word in lower_line for word in ["notes", "הערות"]):
+            field_type = "textarea"
 
-                    # Assign Angular Material icon by field type
-                    type_to_icon = {
-                        "text": "description",
-                        "number": "calculate",
-                        "email": "email",
-                        "textarea": "notes",
-                        "checkbox": "check_box",
-                        "date": "event",
-                        "select": "list_alt",
-                    }
-                    icon_name = type_to_icon.get(field_type, "description")
+        required_flag = ("required" in lower_line or "נדרש" in line_stripped)
 
-                    fields.append(FormField(
-                        name=field_name,
-                        type=field_type,
-                        label=field_name,
-                        required=required_flag,
-                        placeholder=f"Enter {field_name.lower()}",
-                        current_value=None,
-                        icon=icon_name,
-                        api_field_name=api_field_name
-                    ))
+        # Peek ahead for API Field Name mapping near this bullet
+        api_field_name = None
+        for j in range(i + 1, min(i + 4, len(lines))):
+            nxt = lines[j].strip()
+            if not nxt:
+                continue
+            if nxt.lower().startswith("api field name:"):
+                api_field_name = nxt.split(":", 1)[1].strip()
+                break
+
+        # Icon mapping
+        type_to_icon = {
+            "text": "description",
+            "number": "calculate",
+            "email": "email",
+            "textarea": "notes",
+            "checkbox": "check_box",
+            "date": "event",
+            "select": "list_alt",
+        }
+        icon_name = type_to_icon.get(field_type, "description")
+
+        # Debug: show extracted bilingual names and api field
+        try:
+            print(f"Parsed field -> eng: '{field_name}', heb: '{heb_name}', api: '{api_field_name}', type: {field_type}")
+        except Exception:
+            pass
+
+        fields.append(FormField(
+            name=field_name,
+            label=heb_name if heb_name else field_name,
+            heb_name=heb_name,
+            type=field_type,
+            current_value=None,
+            required=required_flag,
+            placeholder=f"Enter {field_name.lower()}",
+            icon=icon_name,
+            api_field_name=api_field_name
+        ))
 
     # If no fields were extracted, create a generic field
     if not fields:

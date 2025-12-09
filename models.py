@@ -7,6 +7,7 @@ from typing import List, Dict, Any, Literal, Optional
 class FormField(BaseModel):
     name: str = Field(description="A unique programmatic ID for the field (e.g., 'user_email').")
     label: str = Field(description="The user-facing label for the field (e.g., 'Your Full Name').")
+    heb_name: Optional[str] = Field(default=None, description="The field name in Hebrew for display and localization.")
     type: Literal["text", "number", "email", "textarea", "checkbox", "date", "select"] = Field(
         description="The HTML input type."
     )

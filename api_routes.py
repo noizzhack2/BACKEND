@@ -227,6 +227,23 @@ def register_routes(
             parsed_form = parse_form_from_text(matched_form, form_content)
             llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=api_key)
             fields = parsed_form.fields or []
+            print("Parsed form fields:", fields)
+            # Ensure Hebrew labels are present; fallback to name if missing
+            for f in fields:
+                if not getattr(f, "label", None):
+                    try:
+                        # If name contains bilingual format, extract Hebrew after '/'
+                        name = getattr(f, "name", "") or ""
+                        print("Processing field name for label:", name)
+                        if "/" in name:
+                            parts = [p.strip() for p in name.split("/")]
+                            if len(parts) > 1 and parts[1]:
+                                f.label = parts[1]
+                        # Otherwise keep existing or name
+                        if not getattr(f, "label", None):
+                            f.label = name
+                    except Exception:
+                        f.label = getattr(f, "name", "") or ""
 
             # Use extracted logic to process the chat message
             response_text, updated_fields, is_complete, updated_history = process_chat_message(
