@@ -141,23 +141,27 @@ def register_routes(
             return res
 
         if embeddings:
-            # Use the augmented text to compute the query embedding
+            # Use the augmented text to compute the query embedding once
             user_emb = embeddings.embed_query(augmented_text)
-            for form_name, info in form_index.items():
-                form_emb = info.get("embedding") or []
-                # Embedding similarity
-                emb_score = float(cosine_similarity(user_emb, form_emb))
-                # Keyword-based score
-                form_keywords = extract_form_keywords(info.get("content", ""))
-                kw_score = keyword_overlap_score(form_keywords)
-                # Combine scores (weighted); favor embeddings but include keywords for robustness
-                print(f"Form: {form_name}, Embedding score: {emb_score}, Keyword score: {kw_score}")
-                combined = 0.3 * emb_score + 0.7 * kw_score
-                if combined > 0.2:
+
+            # Process each form in parallel to reduce latency
+            from concurrent.futures import ThreadPoolExecutor, as_completed
+
+            def process_form(item):
+                form_name, info = item
+                try:
+                    form_emb = info.get("embedding") or []
+                    emb_score = float(cosine_similarity(user_emb, form_emb))
+                    form_keywords = extract_form_keywords(info.get("content", ""))
+                    kw_score = keyword_overlap_score(form_keywords)
+                    combined = 0.3 * emb_score + 0.7 * kw_score
+                    print(f"Form: {form_name}, Embedding score: {emb_score}, Keyword score: {kw_score}, Combined: {combined}")
+                    if combined <= 0.2:
+                        return None
                     # Apply exclusion filter
-                    print("exclude set:", exclude_set)
                     if form_name.strip().lower() in exclude_set:
-                        continue
+                        return None
+
                     purpose_en, purpose_heb = extract_purpose_bilingual(info.get("content", ""))
                     desc_en = purpose_en or ""
                     desc_heb = purpose_heb or ""
@@ -166,13 +170,25 @@ def register_routes(
                     if not desc_heb and desc_en:
                         desc_heb = translate_text(desc_en, "Hebrew")
                     title_heb = translate_text(form_name, "Hebrew")
-                    results.append(MatchedForm(
+                    return MatchedForm(
                         title=form_name,
                         score=round(combined, 2),
                         title_heb=title_heb,
                         description_en=desc_en,
                         description_heb=desc_heb,
-                    ))
+                    )
+                except Exception:
+                    return None
+
+            # Limit workers to avoid overwhelming external services (LLM/translation)
+            max_workers = min(8, max(2, os.cpu_count() or 4))
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                future_to_item = {executor.submit(process_form, item): item for item in form_index.items()}
+                for future in as_completed(future_to_item):
+                    mf = future.result()
+                    if mf:
+                        results.append(mf)
+
             results.sort(key=lambda x: x.score, reverse=True)
             return MatchedFormsResponse(results=results)
         else:
