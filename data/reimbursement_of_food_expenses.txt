@@ -9,7 +9,9 @@ This form is used to request reimbursement for meal and food expenses incurred d
 טופס זה משמש לבקשת החזר הוצאות ארוחות ואוכל שנגרמו במהלך נסיעות עסקיות, בידור לקוחות או אירועי צוות.
 
 Endpoint URL / כתובת קצה:
-http://food_expense.com
+https://aeovpfvchmmybemunjmh.supabase.co/rest/v1/invoices
+
+Type: food
 
 Instructions / הנחיות:
 1. Complete all required fields marked with an asterisk (*) / השלם את כל השדות הנדרשים המסומנים בכוכבית (*)
@@ -23,12 +25,16 @@ Form Fields / שדות הטופס:
 Only the following fields are required:
    - Date (required) / תאריך (נדרש)
    API Field Name: date
+   Validation: { "max": "today" }
    - Attendance (required) / משתתפים (נדרש)
    API Field Name: attendees
+   Validation: { "min": 0 }
    - Location (required) / מיקום (נדרש)
    API Field Name: location
+   Validation: { }
    - Amount (required) / סכום (נדרש)
    API Field Name: amount
+   Validation: { "min": 0 }
 
 Important Notes / הערות חשובות:
 - Standard meal limits per person: Breakfast $15, Lunch $25, Dinner $50 / מגבלות ארוחה סטנדרטיות לנפש: בוקר $15, צהריים $25, ערב $50

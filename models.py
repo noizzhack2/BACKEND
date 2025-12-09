@@ -16,6 +16,7 @@ class FormField(BaseModel):
     placeholder: Optional[str] = Field(default=None, description="Helper text shown inside the field.")
     icon: Optional[str] = Field(default=None, description="Angular Material icon name associated with the field.")
     api_field_name: Optional[str] = Field(default=None, description="Canonical API field name for backend payloads.")
+    validation: Optional[Dict[str, Any]] = Field(default=None, description="Validation rules for the field.")
 
 
 class AdaptiveForm(BaseModel):
@@ -25,6 +26,7 @@ class AdaptiveForm(BaseModel):
     endpoint: str = Field(description="The API endpoint to submit the form data to.", default="/submit_form")
     instruction_file_name: str = Field(
         description="The source instruction file name (e.g., 'reimbursement_of_parking_expenses.txt').", default="")
+    form_type: Optional[str] = Field(default=None, description="The type of the form (e.g., 'Reimbursement', 'Request').")
 
 
 class FormRequest(BaseModel):
@@ -57,6 +59,7 @@ class ChatMessage(BaseModel):
     history: List[Dict[str, str]] = Field(default_factory=list,
                                           description="Conversation history: list of {'role': 'user'|'assistant', 'content': '...'}")
     endpoint: Optional[str] = Field(default=None, description="Form submission endpoint carried from start_chat")
+    form_type: Optional[str] = Field(default=None, description="The type of the form (e.g., 'Reimbursement', 'Request').")
 
 
 class ChatResponse(BaseModel):
@@ -67,3 +70,4 @@ class ChatResponse(BaseModel):
     is_complete: bool = Field(default=False, description="True if all required fields are filled and valid")
     history: List[Dict[str, str]] = Field(description="Updated conversation history including the new exchange")
     endpoint: Optional[str] = Field(default=None, description="The API endpoint to submit the form data to")
+    form_type: Optional[str] = Field(default=None, description="The type of the form (e.g., 'Reimbursement', 'Request').")

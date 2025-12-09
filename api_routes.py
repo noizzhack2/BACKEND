@@ -156,7 +156,7 @@ def register_routes(
                     kw_score = keyword_overlap_score(form_keywords)
                     combined = 0.3 * emb_score + 0.7 * kw_score
                     print(f"Form: {form_name}, Embedding score: {emb_score}, Keyword score: {kw_score}, Combined: {combined}")
-                    if combined <= 0.2:
+                    if combined <= 0.5:
                         return None
                     # Apply exclusion filter
                     if form_name.strip().lower() in exclude_set:
@@ -241,9 +241,9 @@ def register_routes(
             matched_form, form_content = match_result
 
             parsed_form = parse_form_from_text(matched_form, form_content)
+            print("Parsed form:", parsed_form)
             llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=api_key)
             fields = parsed_form.fields or []
-            print("Parsed form fields:", fields)
             # Ensure Hebrew labels are present; fallback to name if missing
             for f in fields:
                 if not getattr(f, "label", None):
@@ -274,7 +274,8 @@ def register_routes(
                 fields=updated_fields,
                 is_complete=is_complete,
                 history=updated_history,
-                endpoint=getattr(parsed_form, "endpoint", None)
+                endpoint=getattr(parsed_form, "endpoint", None),
+                form_type=getattr(parsed_form, "form_type", None)
             )
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error in start_chat: {e}")
@@ -311,8 +312,8 @@ def register_routes(
                 fields=updated_fields,
                 is_complete=is_complete,
                 history=updated_history,
-                endpoint=request.endpoint
+                endpoint=request.endpoint,
+                form_type=request.form_type
             )
-
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Failed to process chat message: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Error in chat_endpoint: {e}")

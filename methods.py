@@ -17,6 +17,7 @@ def parse_form_from_text(form_name: str, form_content: str) -> AdaptiveForm:
     description = "Submit your reimbursement request using this form."
     endpoint_url = "/submit_form"
     fields: list[FormField] = []
+    form_type = None
 
     for i, line in enumerate(lines):
         line_stripped = line.strip()
@@ -56,6 +57,12 @@ def parse_form_from_text(form_name: str, form_content: str) -> AdaptiveForm:
         m = re.search(r"https?://[^\s]+", form_content)
         if m:
             endpoint_url = m.group(0)
+
+    # Extract form type
+    for line in lines:
+        if line.lower().startswith("type:"):
+            form_type = line.split(":", 1)[1].strip()
+            break
 
     # Extract fields: accept bilingual bullets or ones with markers
     import re
@@ -100,15 +107,22 @@ def parse_form_from_text(form_name: str, form_content: str) -> AdaptiveForm:
 
         required_flag = ("required" in lower_line or "נדרש" in line_stripped)
 
-        # Peek ahead for API Field Name mapping near this bullet
+        # Peek ahead for API Field Name and Validation mapping
         api_field_name = None
-        for j in range(i + 1, min(i + 4, len(lines))):
+        validation_rules = None
+        for j in range(i + 1, min(i + 5, len(lines))):
             nxt = lines[j].strip()
             if not nxt:
                 continue
             if nxt.lower().startswith("api field name:"):
                 api_field_name = nxt.split(":", 1)[1].strip()
-                break
+            elif nxt.lower().startswith("validation:"):
+                try:
+                    import json
+                    validation_str = nxt.split(":", 1)[1].strip()
+                    validation_rules = json.loads(validation_str)
+                except (json.JSONDecodeError, IndexError):
+                    validation_rules = None  # Reset on parsing error
 
         # Icon mapping
         type_to_icon = {
@@ -124,7 +138,7 @@ def parse_form_from_text(form_name: str, form_content: str) -> AdaptiveForm:
 
         # Debug: show extracted bilingual names and api field
         try:
-            print(f"Parsed field -> eng: '{field_name}', heb: '{heb_name}', api: '{api_field_name}', type: {field_type}")
+            print(f"Parsed field -> eng: '{field_name}', heb: '{heb_name}', api: '{api_field_name}', type: {field_type}, validation: {validation_rules}")
         except Exception:
             pass
 
@@ -137,7 +151,8 @@ def parse_form_from_text(form_name: str, form_content: str) -> AdaptiveForm:
             required=required_flag,
             placeholder=f"Enter {field_name.lower()}",
             icon=icon_name,
-            api_field_name=api_field_name
+            api_field_name=api_field_name,
+            validation=validation_rules
         ))
 
     # If no fields were extracted, create a generic field
@@ -157,7 +172,8 @@ def parse_form_from_text(form_name: str, form_content: str) -> AdaptiveForm:
         description=description,
         fields=fields,
         endpoint=endpoint_url,
-        instruction_file_name=form_name
+        instruction_file_name=form_name,
+        form_type=form_type
     )
 
 

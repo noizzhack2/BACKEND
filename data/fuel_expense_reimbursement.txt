@@ -9,7 +9,9 @@ This form is used to request reimbursement for fuel expenses incurred during bus
 טופס זה משמש לבקשת החזר הוצאות דלק שנגרמו במהלך נסיעות עסקיות או שימוש מורשה בכלי רכב.
 
 Endpoint URL / כתובת קצה:
-http://fuel_expense.com
+https://aeovpfvchmmybemunjmh.supabase.co/rest/v1/invoices
+
+Type: fuel
 
 Instructions / הנחיות:
 1. Fill in all required fields marked with an asterisk (*) / מלא את כל השדות הנדרשים המסומנים בכוכבית (*)
@@ -22,20 +24,28 @@ Form Fields / שדות הטופס:
 Only the following fields are required:
     - Date (required) / תאריך (נדרש)
        API Field Name: date
+       Validation: { "max": "today" }
     - Location (required) / מיקום (נדרש)
        API Field Name: location
+       Validation: {}
     - Car Number (required) / מספר רכב (נדרש)
        API Field Name: car_number
+       Validation: { "pattern": "^[0-9-]*$" },
     - Fuel Station (required) / תחנת דלק (נדרש)
        API Field Name: station
+       Validation: {}
     - Liters Amount (required) / כמות ליטרים (נדרש)
        API Field Name: liters_amount
+       Validation: { "min": 0 }
     - Price Per Liter (required) / מחיר לליטר (נדרש)
        API Field Name: price_per_liter
+       Validation: { "min": 0 }
     - Notes (optional) / הערות (אופציונלי)
        API Field Name: notes
+       Validation: { }
     - Amount (required) / סכום (נדרש)
        API Field Name: amount
+       Validation: { "min": 0 }
 
 Purpose:
 This form is used to request reimbursement for fuel expenses. Provide the following: date, location, car number, fuel station, liters amount, price per liter, notes, and total amount.
