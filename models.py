@@ -56,6 +56,7 @@ class ChatMessage(BaseModel):
                                     description="Current form fields being filled")
     history: List[Dict[str, str]] = Field(default_factory=list,
                                           description="Conversation history: list of {'role': 'user'|'assistant', 'content': '...'}")
+    endpoint: Optional[str] = Field(default=None, description="Form submission endpoint carried from start_chat")
 
 
 class ChatResponse(BaseModel):
@@ -65,3 +66,4 @@ class ChatResponse(BaseModel):
         description="Updated form fields with new values filled by AI based on user message")
     is_complete: bool = Field(default=False, description="True if all required fields are filled and valid")
     history: List[Dict[str, str]] = Field(description="Updated conversation history including the new exchange")
+    endpoint: Optional[str] = Field(default=None, description="The API endpoint to submit the form data to")

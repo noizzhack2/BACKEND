@@ -273,7 +273,8 @@ def register_routes(
                 response=response_text,
                 fields=updated_fields,
                 is_complete=is_complete,
-                history=updated_history
+                history=updated_history,
+                endpoint=getattr(parsed_form, "endpoint", None)
             )
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error in start_chat: {e}")
@@ -309,7 +310,8 @@ def register_routes(
                 response=response_text,
                 fields=updated_fields,
                 is_complete=is_complete,
-                history=updated_history
+                history=updated_history,
+                endpoint=request.endpoint
             )
 
         except Exception as e:
