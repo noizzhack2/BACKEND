@@ -346,7 +346,7 @@ def build_chat_prompt(
     For notes: Infer purpose or context from the message (e.g., "for an interview" -> "Interview")
     For updates: If a field already has a value but the user provides new information for it, extract the NEW value to replace the old one.
 
-    IMPORTANT FOR INITIAL MESSAGE: If this is the start of the conversation, DO NOT greet the user. Instead, describe the available form fields and what information is needed.
+    IMPORTANT FOR INITIAL MESSAGE: If this is the start of the conversation, describe ONLY the available form fields and what information is needed, DO NOT greet the user and DO NOT tell him welcome.
 
     Return your response in this exact format:
     EXTRACTED_VALUES: {{"field_name": "value", "another_field": "value"}}
