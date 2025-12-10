@@ -67,14 +67,33 @@ def parse_form_from_text(form_name: str, form_content: str) -> AdaptiveForm:
     # Extract fields: accept bilingual bullets or ones with markers
     import re
     field_names = set()
+    in_fields_section = False
     for i, line in enumerate(lines):
         line_stripped = line.strip()
+
+        # State management for parsing
+        if "form fields" in line_stripped.lower() or "שדות הטופס" in line_stripped:
+            in_fields_section = True
+            continue
+        elif in_fields_section and (line_stripped.endswith(":") or (line_stripped.startswith("-") and ":" in line_stripped and not "/" in line_stripped)):
+             # Heuristic to detect end of fields section if another section starts
+            if any(keyword in line_stripped.lower() for keyword in ["purpose", "notes", "instructions"]):
+                in_fields_section = False
+
+        if not in_fields_section:
+            continue
+
         if not line_stripped.startswith("-"):
             continue
+        
         lower_line = line_stripped.lower()
         has_marker = ("required" in lower_line or "optional" in lower_line or "נדרש" in line_stripped or "אופציונלי" in line_stripped)
         is_bilingual = ("/" in line_stripped)
-        if not (has_marker or is_bilingual):
+        
+        # A line in the notes section might be bilingual but not a field.
+        # A real field will usually have a marker word or be followed by API/Validation definitions.
+        is_likely_field = has_marker or is_bilingual
+        if not is_likely_field:
             continue
 
         cleaned = re.sub(r"\([^)]*\)", "", line_stripped)
