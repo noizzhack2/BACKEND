@@ -9,7 +9,7 @@ This form is used to request reimbursement for fuel expenses incurred during bus
 טופס זה משמש לבקשת החזר הוצאות דלק שנגרמו במהלך נסיעות עסקיות או שימוש מורשה בכלי רכב.
 
 Endpoint URL / כתובת קצה:
-https://aeovpfvchmmybemunjmh.supabase.co/rest/v1/invoices
+https://aeovpfvchmmybemunjmh.supabase.co/rest/v1/rpc/submit_invoice_entry
 
 Type: fuel
 

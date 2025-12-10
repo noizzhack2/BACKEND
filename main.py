@@ -112,7 +112,9 @@ API = FastAPI(title="Adaptive Form Generator API", lifespan=lifespan)
 # CORS setup to allow local frontend and deployments
 allowed_origins = [
     "http://localhost:4200",
+    "https://localhost:4200",
     "http://127.0.0.1:4200",
+    "https://127.0.0.1:4200",    
     "http://localhost:3000",
     "http://127.0.0.1:3000",
 ]

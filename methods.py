@@ -114,12 +114,18 @@ def parse_form_from_text(form_name: str, form_content: str) -> AdaptiveForm:
             nxt = lines[j].strip()
             if not nxt:
                 continue
+            # Stop if we hit the next field
+            if nxt.startswith("-"):
+                break
             if nxt.lower().startswith("api field name:"):
                 api_field_name = nxt.split(":", 1)[1].strip()
             elif nxt.lower().startswith("validation:"):
                 try:
                     import json
                     validation_str = nxt.split(":", 1)[1].strip()
+                    # Handle trailing comma if present
+                    if validation_str.endswith(','):
+                        validation_str = validation_str[:-1]
                     validation_rules = json.loads(validation_str)
                 except (json.JSONDecodeError, IndexError):
                     validation_rules = None  # Reset on parsing error
