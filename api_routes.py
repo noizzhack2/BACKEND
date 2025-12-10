@@ -154,7 +154,7 @@ def register_routes(
                     emb_score = float(cosine_similarity(user_emb, form_emb))
                     form_keywords = extract_form_keywords(info.get("content", ""))
                     kw_score = keyword_overlap_score(form_keywords)
-                    combined = 0.3 * emb_score + 0.7 * kw_score
+                    combined = 0.2 * emb_score + 0.8 * kw_score
                     print(f"Form: {form_name}, Embedding score: {emb_score}, Keyword score: {kw_score}, Combined: {combined}")
                     if combined <= 0.6:
                         return None
@@ -243,7 +243,7 @@ def register_routes(
 
             parsed_form = parse_form_from_text(matched_form, form_content)
             print("Parsed form:", parsed_form)
-            llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=api_key)
+            llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash", google_api_key=api_key)
             fields = parsed_form.fields or []
             # Ensure Hebrew labels are present; fallback to name if missing
             for f in fields:
@@ -298,7 +298,7 @@ def register_routes(
             raise HTTPException(status_code=400, detail="Message cannot be empty")
 
         try:
-            llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=api_key)
+            llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash", google_api_key=api_key)
             fields = request.fields or []
 
             # Use extracted logic to process the chat message

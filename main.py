@@ -37,7 +37,7 @@ if sys.version_info >= (3, 14):
 # Ensure API key is read from environment
 API_KEY = os.getenv("GENERATIVE_AI_KEY")
 EMBEDDING_MODEL = "text-embedding-004"
-LLM_MODEL = "gemini-2.5-flash"
+LLM_MODEL = "gemini-2.0-flash"
 DIRECTORY_PATH = "data"
 PERSIST_DIR = "./chroma_db_py"
 
