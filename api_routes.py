@@ -39,7 +39,7 @@ def register_routes(
             if not api_key:
                 return text
             try:
-                llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=api_key)
+                llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash", google_api_key=api_key)
                 prompt = (
                     "You are a helpful assistant. Given a short user request, return a compact, "
                     "high-context expansion: a comma-separated list of domain-specific synonyms, each have ONLY one NOUN WORD!!!!, "
@@ -114,7 +114,7 @@ def register_routes(
             if not api_key:
                 return text
             try:
-                llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=api_key)
+                llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash", google_api_key=api_key)
                 prompt = (
                     f"Translate the following text to {target_lang}. Return ONLY the translation, no explanations, no quotes.\n"
                     f"Text: {text}"
@@ -156,7 +156,7 @@ def register_routes(
                     kw_score = keyword_overlap_score(form_keywords)
                     combined = 0.3 * emb_score + 0.7 * kw_score
                     print(f"Form: {form_name}, Embedding score: {emb_score}, Keyword score: {kw_score}, Combined: {combined}")
-                    if combined <= 0.5:
+                    if combined <= 0.6:
                         return None
                     # Apply exclusion filter
                     if form_name.strip().lower() in exclude_set:
@@ -184,11 +184,12 @@ def register_routes(
             max_workers = min(8, max(2, os.cpu_count() or 4))
             with ThreadPoolExecutor(max_workers=max_workers) as executor:
                 future_to_item = {executor.submit(process_form, item): item for item in form_index.items()}
+                print("Submitted form matching tasks:", len(future_to_item))
                 for future in as_completed(future_to_item):
                     mf = future.result()
                     if mf:
                         results.append(mf)
-
+            print("Total matched forms found:", len(results))
             results.sort(key=lambda x: x.score, reverse=True)
             return MatchedFormsResponse(results=results)
         else:
