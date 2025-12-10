@@ -9,7 +9,9 @@ This form is used to request reimbursement for parking expenses incurred during 
 טופס להחזר הוצאות חניה בנסיעות עסקיות, פגישות לקוחות או פעילות החברה.
 
 Endpoint URL / כתובת קצה:
-http://parking_expense.com
+https://aeovpfvchmmybemunjmh.supabase.co/rest/v1/invoices
+
+Type: parking
 
 Instructions / הנחיות:
 1. Complete all required fields marked with an asterisk (*) / השלם את כל השדות הנדרשים המסומנים בכוכבית (*).
@@ -22,16 +24,22 @@ Form Fields / שדות הטופס:
 Only the following fields are required:
    - Date (required) / תאריך (נדרש)
    API Field Name: date
+   Validation: { "max": "today" }
    - Location (required) / מיקום (נדרש)
    API Field Name: location
+   Validation: { }
    - Car Number (required) / מספר רכב (נדרש)
    API Field Name: car_number
+   Validation: { "pattern": "^[0-9-]*$" }
    - Hours Amount (required) / מספר שעות (נדרש)
    API Field Name: hours_amount
+   Validation: { "min": 0 }
    - Notes (optional) / הערות (אופציונלי)
    API Field Name: notes
+   Validation: { }
    - Amount (required) / סכום (נדרש)
    API Field Name: amount
+   Validation: { "min": 0 }
 
 Purpose:
 This form is used to request reimbursement for parking expenses. Provide the following: date, location, car number, number of hours, notes, and total amount.

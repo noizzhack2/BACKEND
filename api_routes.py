@@ -141,23 +141,27 @@ def register_routes(
             return res
 
         if embeddings:
-            # Use the augmented text to compute the query embedding
+            # Use the augmented text to compute the query embedding once
             user_emb = embeddings.embed_query(augmented_text)
-            for form_name, info in form_index.items():
-                form_emb = info.get("embedding") or []
-                # Embedding similarity
-                emb_score = float(cosine_similarity(user_emb, form_emb))
-                # Keyword-based score
-                form_keywords = extract_form_keywords(info.get("content", ""))
-                kw_score = keyword_overlap_score(form_keywords)
-                # Combine scores (weighted); favor embeddings but include keywords for robustness
-                print(f"Form: {form_name}, Embedding score: {emb_score}, Keyword score: {kw_score}")
-                combined = 0.3 * emb_score + 0.7 * kw_score
-                if combined > 0.2:
+
+            # Process each form in parallel to reduce latency
+            from concurrent.futures import ThreadPoolExecutor, as_completed
+
+            def process_form(item):
+                form_name, info = item
+                try:
+                    form_emb = info.get("embedding") or []
+                    emb_score = float(cosine_similarity(user_emb, form_emb))
+                    form_keywords = extract_form_keywords(info.get("content", ""))
+                    kw_score = keyword_overlap_score(form_keywords)
+                    combined = 0.3 * emb_score + 0.7 * kw_score
+                    print(f"Form: {form_name}, Embedding score: {emb_score}, Keyword score: {kw_score}, Combined: {combined}")
+                    if combined <= 0.5:
+                        return None
                     # Apply exclusion filter
-                    print("exclude set:", exclude_set)
                     if form_name.strip().lower() in exclude_set:
-                        continue
+                        return None
+
                     purpose_en, purpose_heb = extract_purpose_bilingual(info.get("content", ""))
                     desc_en = purpose_en or ""
                     desc_heb = purpose_heb or ""
@@ -166,13 +170,25 @@ def register_routes(
                     if not desc_heb and desc_en:
                         desc_heb = translate_text(desc_en, "Hebrew")
                     title_heb = translate_text(form_name, "Hebrew")
-                    results.append(MatchedForm(
+                    return MatchedForm(
                         title=form_name,
                         score=round(combined, 2),
                         title_heb=title_heb,
                         description_en=desc_en,
                         description_heb=desc_heb,
-                    ))
+                    )
+                except Exception:
+                    return None
+
+            # Limit workers to avoid overwhelming external services (LLM/translation)
+            max_workers = min(8, max(2, os.cpu_count() or 4))
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                future_to_item = {executor.submit(process_form, item): item for item in form_index.items()}
+                for future in as_completed(future_to_item):
+                    mf = future.result()
+                    if mf:
+                        results.append(mf)
+
             results.sort(key=lambda x: x.score, reverse=True)
             return MatchedFormsResponse(results=results)
         else:
@@ -225,15 +241,42 @@ def register_routes(
             matched_form, form_content = match_result
 
             parsed_form = parse_form_from_text(matched_form, form_content)
+            print("Parsed form:", parsed_form)
             llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=api_key)
             fields = parsed_form.fields or []
+            # Ensure Hebrew labels are present; fallback to name if missing
+            for f in fields:
+                if not getattr(f, "label", None):
+                    try:
+                        # If name contains bilingual format, extract Hebrew after '/'
+                        name = getattr(f, "name", "") or ""
+                        print("Processing field name for label:", name)
+                        if "/" in name:
+                            parts = [p.strip() for p in name.split("/")]
+                            if len(parts) > 1 and parts[1]:
+                                f.label = parts[1]
+                        # Otherwise keep existing or name
+                        if not getattr(f, "label", None):
+                            f.label = name
+                    except Exception:
+                        f.label = getattr(f, "name", "") or ""
 
             # Use extracted logic to process the chat message
-            return process_chat_message(
+            response_text, updated_fields, is_complete, updated_history = process_chat_message(
                 user_message="",
                 fields=fields,
                 history=[],
                 llm=llm
+            )
+
+
+            return ChatResponse(
+                response=response_text,
+                fields=updated_fields,
+                is_complete=is_complete,
+                history=updated_history,
+                endpoint=getattr(parsed_form, "endpoint", None),
+                form_type=getattr(parsed_form, "form_type", None)
             )
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error in start_chat: {e}")
@@ -258,12 +301,20 @@ def register_routes(
             fields = request.fields or []
 
             # Use extracted logic to process the chat message
-            return process_chat_message(
+            response_text, updated_fields, is_complete, updated_history = process_chat_message(
                 user_message=user_message,
                 fields=fields,
                 history=request.history,
                 llm=llm
             )
 
+            return ChatResponse(
+                response=response_text,
+                fields=updated_fields,
+                is_complete=is_complete,
+                history=updated_history,
+                endpoint=request.endpoint,
+                form_type=request.form_type
+            )
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Failed to process chat message: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Error in chat_endpoint: {e}")

@@ -115,6 +115,10 @@ allowed_origins = [
     "http://127.0.0.1:4200",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "https://localhost:4200",
+    "https://127.0.0.1:4200",
+    "https://localhost:3000",
+    "https://127.0.0.1:3000",
 ]
 
 # Optionally allow additional origins via env var (comma separated)
