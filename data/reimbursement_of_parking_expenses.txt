@@ -6,7 +6,7 @@ parking, car, vehicle, lot, garage, meter, receipt, reimbursement, parking expen
 
 Purpose / מטרה:
 This form is used to request reimbursement for parking expenses incurred during business travel, client meetings, or company-related activities.
-טופס זה משמש לבקשת החזר הוצאות חניה שנגרמו במהלך נסיעות עסקיות, פגישות לקוחות או פעילויות הקשורות לחברה.
+טופס להחזר הוצאות חניה בנסיעות עסקיות, פגישות לקוחות או פעילות החברה.
 
 Endpoint URL / כתובת קצה:
 https://aeovpfvchmmybemunjmh.supabase.co/rest/v1/rpc/submit_invoice_entry
