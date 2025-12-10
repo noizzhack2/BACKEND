@@ -6,7 +6,7 @@ food, meal, restaurant, lunch, dinner, breakfast,reimbursement, snack, beverage,
 
 Purpose / מטרה:
 This form is used to request reimbursement for meal and food expenses incurred during business travel, client entertainment, or team events.
-טופס זה משמש לבקשת החזר הוצאות ארוחות ואוכל שנגרמו במהלך נסיעות עסקיות, בידור לקוחות או אירועי צוות.
+טופס להחזר הוצאות ארוחות ואוכל שנגרמו במהלך נסיעות עסקיות או אירועי צוות.
 
 Endpoint URL / כתובת קצה:
 http://food_expense.com
