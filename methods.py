@@ -482,7 +482,7 @@ def process_chat_message(
         fields: List[FormField],
         history: List[Dict[str, str]],
         llm
-) -> ChatResponse:
+) ->  Tuple[str, List[FormField], bool, List[Dict[str, str]]]:
     """
     Process a chat message for conversational form filling.
 
@@ -514,9 +514,4 @@ def process_chat_message(
     # Update conversation history
     updated_history = update_conversation_history(history, user_message, response_text)
 
-    return ChatResponse(
-        response=response_text,
-        fields=updated_fields,
-        is_complete=is_complete,
-        history=updated_history
-    )
+    return response_text, updated_fields, is_complete, updated_history

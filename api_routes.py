@@ -265,7 +265,7 @@ def register_routes(
             response_text, updated_fields, is_complete, updated_history = process_chat_message(
                 user_message="",
                 fields=fields,
-                conversation_history=[],
+                history=[],
                 llm=llm
             )
 
@@ -304,7 +304,7 @@ def register_routes(
             response_text, updated_fields, is_complete, updated_history = process_chat_message(
                 user_message=user_message,
                 fields=fields,
-                conversation_history=request.history,
+                history=request.history,
                 llm=llm
             )
 
