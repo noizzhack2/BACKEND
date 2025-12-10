@@ -269,6 +269,7 @@ def register_routes(
                 llm=llm
             )
 
+
             return ChatResponse(
                 response=response_text,
                 fields=updated_fields,
